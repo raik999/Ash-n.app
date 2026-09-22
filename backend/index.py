@@ -10,7 +10,7 @@ from config.database import SessionLocal, init_database
 from config.settings import settings
 from middleware.error_middleware import register_error_handlers
 from routes import auth_routes, tag_routes, user_routes
-from seeds.seed_tags import seed_tags
+from backend.src.seeds.seed_tags import seed_tags
 
 logging.basicConfig(
     level=logging.INFO if not settings.debug else logging.DEBUG,
