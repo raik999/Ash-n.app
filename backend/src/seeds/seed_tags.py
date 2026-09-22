@@ -1,6 +1,5 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
 from entities.tag import Tag
 
 DEFAULT_TAGS: list[tuple[str, str]] = [

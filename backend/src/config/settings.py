@@ -1,6 +1,5 @@
 from pathlib import Path
 from urllib.parse import quote_plus
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent

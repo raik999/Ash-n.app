@@ -1,11 +1,9 @@
 import logging
 
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
 from config.database import SessionLocal, init_database
 from config.settings import settings
 from middleware.error_middleware import register_error_handlers

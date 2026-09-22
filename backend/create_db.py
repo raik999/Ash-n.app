@@ -2,7 +2,6 @@ import sys
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
-
 from config.settings import settings
 
 
