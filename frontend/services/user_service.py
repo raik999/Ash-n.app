@@ -8,6 +8,7 @@ def update_profile(
     *,
     name: str | None = None,
     username: str | None = None,
+    email: str | None = None,
     bio: str | None = None,
     birthdate: date | None = None,
     tag_ids: list[int] | None = None,
@@ -20,6 +21,9 @@ def update_profile(
 
     if username is not None:
         payload["username"] = username
+
+    if email is not None:
+        payload["email"] = email
 
     if include_bio:
         payload["bio"] = bio
@@ -41,6 +45,23 @@ def upload_avatar(filename: str, content: bytes, mime: str) -> dict[str, Any]:
 
 def delete_avatar() -> dict[str, Any]:
     return api.delete("/api/users/me/avatar")
+
+
+def change_password(
+    current_password: str, new_password: str, confirm_password: str
+) -> dict[str, Any]:
+    return api.patch(
+        "/api/users/me/password",
+        {
+            "current_password": current_password,
+            "new_password": new_password,
+            "confirm_password": confirm_password,
+        },
+    )
+
+
+def delete_account(password: str) -> dict[str, Any]:
+    return api.delete("/api/users/me", {"password": password})
 
 
 def get_public_profile(username: str) -> dict[str, Any]:
