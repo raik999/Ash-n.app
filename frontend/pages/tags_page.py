@@ -4,7 +4,7 @@ from typing import Any
 import flet as ft
 
 from components.brand_header import brand_header, screen_title
-from components.buttons import loading_button
+from components.buttons import link_button, loading_button
 from components.feedback import show_error
 from components.layout import full_width, screen, vspace
 from components.tag_chip import removable_chip, selectable_chip
@@ -77,6 +77,9 @@ def view(page: ft.Page, state: AppState, next_route: str = "/onboarding/avatar")
         finally:
             set_loading(False)
 
+    def do_skip(e: ft.ControlEvent) -> None:
+        page.go(next_route)
+
     done_button, set_loading = loading_button("Listo", do_save)
 
     try:
@@ -113,7 +116,12 @@ def view(page: ft.Page, state: AppState, next_route: str = "/onboarding/avatar")
                 ft.Container(expand=True),
                 vspace(24),
                 full_width(done_button),
-                vspace(40),
+                vspace(6),
+                ft.Row(
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    controls=[link_button("Omitir", do_skip)],
+                ),
+                vspace(28),
             )
         ],
     )
