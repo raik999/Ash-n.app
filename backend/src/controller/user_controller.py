@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from sqlalchemy.orm import Session
-
 from entities.user import User
 from middleware.error_middleware import NotFoundError
 from services import storage_service, user_service

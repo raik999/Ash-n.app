@@ -4,7 +4,14 @@ from config.database import get_db
 from controller import user_controller
 from entities.user import User
 from middleware.auth_middleware import get_current_user
-from validations.user_validation import AvatarResponse, UpdateProfileRequest, UserResponse
+from validations.auth_validation import MessageResponse
+from validations.user_validation import (
+    AvatarResponse,
+    ChangePasswordRequest,
+    DeleteAccountRequest,
+    UpdateProfileRequest,
+    UserResponse,
+)
 
 router = APIRouter(prefix="/api/users", tags=["Usuarios"])
 
@@ -42,6 +49,34 @@ async def upload_my_avatar(
         content_type=file.content_type or "application/octet-stream",
         content=content,
     )
+
+
+@router.patch(
+    "/me/password",
+    response_model=MessageResponse,
+    summary="Cambiar mi contrasena",
+)
+def change_my_password(
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    return user_controller.change_my_password(
+        db, current_user, payload.current_password, payload.new_password
+    )
+
+
+@router.delete(
+    "/me",
+    response_model=MessageResponse,
+    summary="Eliminar mi cuenta (irreversible)",
+)
+def delete_my_account(
+    payload: DeleteAccountRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    return user_controller.delete_my_account(db, current_user, payload.password)
 
 
 @router.delete(
