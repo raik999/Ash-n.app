@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.orm import Session
 from config.database import get_db
 from controller import user_controller
@@ -9,8 +9,10 @@ from validations.user_validation import (
     AvatarResponse,
     ChangePasswordRequest,
     DeleteAccountRequest,
+    PublicUserResponse,
     UpdateProfileRequest,
     UserResponse,
+    UserSummaryResponse,
 )
 
 router = APIRouter(prefix="/api/users", tags=["Usuarios"])
@@ -93,13 +95,27 @@ def delete_my_avatar(
 
 
 @router.get(
+    "",
+    response_model=list[UserSummaryResponse],
+    summary="Buscar artistas por nombre de usuario",
+)
+def search_users(
+    q: str = Query(default="", max_length=30, description="Inicio del nombre de usuario"),
+    limit: int = Query(default=20, ge=1, le=50),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[UserSummaryResponse]:
+    return user_controller.search_users(db, q, limit)
+
+
+@router.get(
     "/{username}",
-    response_model=UserResponse,
+    response_model=PublicUserResponse,
     response_model_by_alias=True,
     summary="Ver el perfil publico de un artista",
 )
 def get_user_profile(
     username: str,
     db: Session = Depends(get_db),
-) -> UserResponse:
+) -> PublicUserResponse:
     return user_controller.get_user_profile(db, username)
