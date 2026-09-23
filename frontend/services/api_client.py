@@ -100,8 +100,8 @@ class ApiClient:
     def patch(self, path: str, json: dict[str, Any] | None = None) -> Any:
         return self.request("PATCH", path, json=json)
 
-    def delete(self, path: str) -> Any:
-        return self.request("DELETE", path)
+    def delete(self, path: str, json: dict[str, Any] | None = None) -> Any:
+        return self.request("DELETE", path, json=json)
 
     def upload(self, path: str, field_name: str, filename: str, content: bytes, mime: str) -> Any:
         return self.request(
