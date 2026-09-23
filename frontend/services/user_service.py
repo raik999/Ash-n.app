@@ -64,5 +64,12 @@ def delete_account(password: str) -> dict[str, Any]:
     return api.delete("/api/users/me", {"password": password})
 
 
+def search_users(query: str, limit: int = 20) -> list[dict[str, Any]]:
+    from urllib.parse import urlencode
+
+    query_string = urlencode({"q": query, "limit": limit})
+    return api.get(f"/api/users?{query_string}")
+
+
 def get_public_profile(username: str) -> dict[str, Any]:
     return api.get(f"/api/users/{username}")
