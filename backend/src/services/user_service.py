@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
 from entities.tag import Tag
 from entities.user import User, UserRole
-from middleware.error_middleware import ConflictError, NotFoundError
+from middleware.error_middleware import AppError, ConflictError, NotFoundError
 from services.security_service import hash_password, verify_password
 from validations.auth_validation import RegisterRequest
 from validations.user_validation import UpdateProfileRequest
@@ -75,6 +74,15 @@ def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> User:
                 )
             user.username = new_username
 
+    if "email" in provided and provided["email"] is not None:
+        new_email = provided["email"].lower()
+
+        if new_email != user.email:
+            taken_by = get_user_by_email(db, new_email)
+            if taken_by is not None:
+                raise ConflictError("Ese correo ya esta registrado", field="email")
+            user.email = new_email
+
     if "bio" in provided:
         user.bio = provided["bio"]
 
@@ -114,12 +122,25 @@ def set_avatar(db: Session, user: User, avatar_url: str) -> User:
 
 def change_password(db: Session, user: User, current: str, new: str) -> User:
     if not verify_password(current, user.password_hash):
-        raise ConflictError("La contrasena actual no es correcta", field="current_password")
+        raise AppError("La contrasena actual no es correcta", field="current_password")
 
     user.password_hash = hash_password(new)
     db.commit()
     db.refresh(user)
     return user
+
+
+def delete_account(db: Session, user: User, password: str) -> None:
+    if not verify_password(password, user.password_hash):
+        raise AppError("La contrasena no es correcta", field="password")
+
+    if user.avatar_url:
+        from services import storage_service
+
+        storage_service.delete_avatar(user.avatar_url)
+
+    db.delete(user)
+    db.commit()
 
 
 def authenticate(db: Session, identifier: str, password: str) -> User:
