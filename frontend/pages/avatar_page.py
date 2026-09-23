@@ -108,7 +108,7 @@ def view(page: ft.Page, state: AppState, next_route: str = "/profile") -> ft.Vie
     done_button, set_loading = loading_button("Listo", do_save)
 
     return ft.View(
-        route="/onboarding/avatar",
+        route=page.route,
         padding=0,
         controls=[
             screen(
