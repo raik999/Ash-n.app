@@ -1,7 +1,11 @@
 from __future__ import annotations
+
 from datetime import date, datetime
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+
 from entities.user import UserRole
+
 from validations.auth_validation import USERNAME_PATTERN
 
 
@@ -34,6 +38,7 @@ class UserResponse(BaseModel):
 class UpdateProfileRequest(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=80)
     username: str | None = Field(default=None, min_length=3, max_length=30)
+    email: EmailStr | None = None
     bio: str | None = Field(default=None, max_length=500)
     birthdate: date | None = None
     tag_ids: list[int] | None = None
@@ -88,3 +93,30 @@ class UpdateProfileRequest(BaseModel):
 
 class AvatarResponse(BaseModel):
     avatar_url: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=1, max_length=72)
+    new_password: str = Field(..., min_length=6, max_length=72)
+    confirm_password: str = Field(..., min_length=6, max_length=72)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        if len(value.encode("utf-8")) > 72:
+            raise ValueError("La contrasena es demasiado larga (maximo 72 bytes)")
+        return value
+
+    @model_validator(mode="after")
+    def passwords_match(self) -> ChangePasswordRequest:
+        if self.new_password != self.confirm_password:
+            raise ValueError("Las contrasenas nuevas no coinciden")
+
+        if self.new_password == self.current_password:
+            raise ValueError("La contrasena nueva debe ser distinta a la actual")
+
+        return self
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str = Field(..., min_length=1, max_length=72)
