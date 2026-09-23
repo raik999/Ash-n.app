@@ -203,12 +203,69 @@ def main() -> int:
         response = client.get("/api/users/no_existe_este_usuario_xyz")
         check("Un perfil inexistente responde 404", response.status_code == 404)
 
+        public_profile = client.get(f"/api/users/{username}").json()
+        check(
+            "El perfil publico NO expone el correo",
+            "email" not in public_profile,
+            str(public_profile.keys()),
+        )
+        check(
+            "El perfil publico NO expone la fecha de nacimiento",
+            "birthdate" not in public_profile,
+            str(public_profile.keys()),
+        )
+        check("El perfil publico NO expone el rol", "role" not in public_profile)
+        check("El perfil publico SI muestra la bio y los #", "tipo" in public_profile)
+
+        print("\n12. Buscador de artistas")
+        response = client.get("/api/users", params={"q": "test_"})
+        check("La busqueda sin token responde 401", response.status_code == 401)
+
+        response = client.get("/api/users", params={"q": username[:6]}, headers=auth_headers)
+        check("Busca por el inicio del @usuario", response.status_code == 200, response.text)
+        found = [u["username"] for u in response.json()]
+        check("Se encuentra a si mismo", username in found, str(found))
+
+        response = client.get("/api/users", params={"q": ""}, headers=auth_headers)
+        check(
+            "Con la busqueda vacia NO devuelve todos los usuarios",
+            response.json() == [],
+            response.text,
+        )
+
+        response = client.get(
+            "/api/users", params={"q": "zzz_no_existe_nadie"}, headers=auth_headers
+        )
+        check("Una busqueda sin coincidencias devuelve lista vacia", response.json() == [])
+
+        response = client.get("/api/users", params={"q": "test_"}, headers=auth_headers)
+        escaped_ok = all(u["username"].startswith("test_") for u in response.json())
+        check("El guion bajo se trata como texto y no como comodin", escaped_ok, response.text)
+
+        response = client.get("/api/users", params={"q": username}, headers=auth_headers)
+        summary = response.json()[0]
+        check(
+            "Los resultados NO exponen el correo",
+            "email" not in summary,
+            str(summary.keys()),
+        )
+        check(
+            "Los resultados traen @, nombre y foto",
+            {"id", "username", "name", "avatar_url"} == set(summary.keys()),
+            str(summary.keys()),
+        )
+
+        response = client.get(
+            "/api/users", params={"q": "t", "limit": 2}, headers=auth_headers
+        )
+        check("El limite de resultados se respeta", len(response.json()) <= 2, response.text)
+
         response = client.post(
             "/api/tags", headers=auth_headers, json={"name": "Hacker", "color": "#000000"}
         )
         check("Un usuario normal NO puede crear # (403)", response.status_code == 403, response.text)
 
-        print("\n12. Cambio de nombre de usuario")
+        print("\n13. Cambio de nombre de usuario")
         other_suffix = uuid.uuid4().hex[:8]
         response = client.post(
             "/api/auth/register",
@@ -264,7 +321,7 @@ def main() -> int:
         response = client.get("/api/auth/me", headers=auth_headers)
         check("La sesion sigue valida tras cambiar el nombre", response.status_code == 200)
 
-        print("\n13. Cambio de correo")
+        print("\n14. Cambio de correo")
         new_email = f"nuevo_{suffix}@ashun.cl"
         response = client.patch("/api/users/me", headers=auth_headers, json={"email": new_email})
         check("Cambia el correo", response.status_code == 200, response.text)
@@ -285,7 +342,7 @@ def main() -> int:
         )
         check("Se puede iniciar sesion con el correo nuevo", response.status_code == 200)
 
-        print("\n14. Cambio de contrasena")
+        print("\n15. Cambio de contrasena")
         new_password = "nuevaClave456"
 
         response = client.patch(
@@ -357,7 +414,7 @@ def main() -> int:
         response = client.get("/api/auth/me", headers=auth_headers)
         check("El token anterior sigue siendo valido", response.status_code == 200)
 
-        print("\n15. Eliminar la cuenta")
+        print("\n16. Eliminar la cuenta")
         me = client.get("/api/auth/me", headers=auth_headers).json()
         current_username = me["username"]
         avatar_path = me.get("avatar_url")
