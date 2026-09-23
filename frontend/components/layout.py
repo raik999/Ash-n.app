@@ -45,12 +45,17 @@ def vspace(height: int) -> ft.Container:
 
 
 def bottom_nav(selected: int = 3, on_change=None) -> ft.NavigationBar:
+    def reset_selection(e: ft.ControlEvent) -> None:
+        if e.control.selected_index != selected:
+            e.control.selected_index = selected
+            e.control.update()
+
     return ft.NavigationBar(
         selected_index=selected,
         bgcolor=Colors.PEACH_SOFT,
         indicator_color=ft.Colors.TRANSPARENT,
         label_behavior=ft.NavigationBarLabelBehavior.ALWAYS_HIDE,
-        on_change=on_change,
+        on_change=on_change or reset_selection,
         destinations=[
             ft.NavigationBarDestination(icon=ft.Icons.HOME_OUTLINED, label="Inicio"),
             ft.NavigationBarDestination(icon=ft.Icons.SEARCH, label="Buscar"),
