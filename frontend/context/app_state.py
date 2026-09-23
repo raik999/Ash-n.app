@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import json
+
 from typing import Any
 
 import flet as ft
@@ -7,6 +10,8 @@ from services import auth_service
 from services.api_client import ApiError, api
 
 STORAGE_TOKEN_KEY = "ashun.token"
+STORAGE_RECENTS_KEY = "ashun.recents"
+MAX_RECENTS = 12
 
 
 class AppState:
@@ -60,6 +65,39 @@ class AppState:
         if not self.user:
             return None
         return api.absolute_url(self.user.get("avatar_url"))
+
+
+    def load_recents(self) -> list[dict[str, str]]:
+        raw = self.page.client_storage.get(STORAGE_RECENTS_KEY)
+
+        if not raw:
+            return []
+
+        try:
+            data = json.loads(raw)
+        except (ValueError, TypeError):
+            return []
+
+        return [
+            item
+            for item in data
+            if isinstance(item, dict) and "kind" in item and "value" in item
+        ]
+
+    def add_recent(self, kind: str, value: str) -> None:
+        value = value.strip()
+        if not value:
+            return
+
+        recents = self.load_recents()
+
+        recents = [r for r in recents if not (r["kind"] == kind and r["value"] == value)]
+        recents.insert(0, {"kind": kind, "value": value})
+
+        self.page.client_storage.set(STORAGE_RECENTS_KEY, json.dumps(recents[:MAX_RECENTS]))
+
+    def clear_recents(self) -> None:
+        self.page.client_storage.remove(STORAGE_RECENTS_KEY)
 
     def load_tags(self, force: bool = False) -> list[dict[str, Any]]:
         if self.tags and not force:
