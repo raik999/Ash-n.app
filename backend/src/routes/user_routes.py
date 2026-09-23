@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 from config.database import get_db
-from controllers import user_controller
+from controller import user_controller
 from entities.user import User
 from middleware.auth_middleware import get_current_user
 from validations.user_validation import AvatarResponse, UpdateProfileRequest, UserResponse

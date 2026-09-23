@@ -22,7 +22,7 @@ def brand_header(
                 font_family=Fonts.HEADING,
             ),
             ft.Image(
-                src="logo.svg",
+                src="logo.png",
                 width=logo_size,
                 height=logo_size,
                 fit=ft.ImageFit.CONTAIN,

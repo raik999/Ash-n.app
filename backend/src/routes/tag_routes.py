@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from config.database import get_db
-from controllers import tag_controller
+from controller import tag_controller
 from middleware.auth_middleware import require_admin
 from validations.user_validation import TagResponse
 

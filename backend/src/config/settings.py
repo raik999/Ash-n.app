@@ -3,7 +3,7 @@ from urllib.parse import quote_plus
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
-
+PROJECT_DIR = BACKEND_DIR.parent
 
 class Settings(BaseSettings):
     host: str = "localhost"
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     max_upload_size: int = 5 * 1024 * 1024
 
     model_config = SettingsConfigDict(
-        env_file=BACKEND_DIR / ".env",
+        env_file=(PROJECT_DIR / ".env", BACKEND_DIR / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",

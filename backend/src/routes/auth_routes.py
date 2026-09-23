@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from config.database import get_db
-from controllers import auth_controller
+from controller import auth_controller
 from entities.user import User
 from middleware.auth_middleware import get_current_user
 from validations.auth_validation import LoginRequest, RegisterRequest, TokenResponse

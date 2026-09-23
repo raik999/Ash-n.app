@@ -13,8 +13,8 @@ venv/
 env/
 ENV/
 
-backend/uploads/*
-!backend/uploads/.gitkeep
+backend/src/uploads/*
+!backend/src/uploads/.gitkeep
 
 frontend/build/
 frontend/.flet/
