@@ -3,7 +3,16 @@ from __future__ import annotations
 import flet as ft
 
 from context.app_state import AppState
-from pages import avatar_page, birthdate_page, login_page, profile_page, register_page, tags_page
+from pages import (
+    account_page,
+    avatar_page,
+    birthdate_page,
+    login_page,
+    profile_page,
+    register_page,
+    settings_page,
+    tags_page,
+)
 from style.theme import Colors, app_theme
 
 FONTS = {
@@ -38,6 +47,11 @@ def main(page: ft.Page) -> None:
             "/profile/tags": lambda: tags_page.view(page, state, "/profile"),
             "/profile/avatar": lambda: avatar_page.view(page, state, "/profile"),
             "/profile": lambda: profile_page.view(page, state),
+            "/settings": lambda: settings_page.view(page, state),
+            "/settings/account": lambda: account_page.view(page, state),
+            "/settings/account/avatar": lambda: avatar_page.view(
+                page, state, "/settings/account"
+            ),
         }
 
         public_routes = {"/login", "/register"}
