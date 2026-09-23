@@ -11,6 +11,8 @@ from services import user_service
 from services.api_client import ApiError
 from style.theme import Colors, Fonts, Sizes, TextSizes
 
+BIO_PLACEHOLDER = "Agrega una presentacion para que otros artistas sepan quien eres."
+
 
 def view(page: ft.Page, state: AppState) -> ft.View:
     if not state.user:
@@ -24,10 +26,6 @@ def view(page: ft.Page, state: AppState) -> ft.View:
 
     def go_to_tags(e: ft.ControlEvent) -> None:
         page.go("/profile/tags")
-
-    def do_logout(e: ft.ControlEvent) -> None:
-        state.clear_session()
-        page.go("/login")
 
     header = ft.Container(
         bgcolor=Colors.PEACH_SOFT,
@@ -46,8 +44,8 @@ def view(page: ft.Page, state: AppState) -> ft.View:
                         icon=ft.Icons.SETTINGS,
                         icon_color=Colors.BRAND_DARK,
                         icon_size=30,
-                        tooltip="Cerrar sesion",
-                        on_click=do_logout,
+                        tooltip="Ajustes (proximamente)",
+                        on_click=None,
                     ),
                     right=8,
                     top=8,
@@ -67,6 +65,18 @@ def view(page: ft.Page, state: AppState) -> ft.View:
         ),
     )
 
+    username_text = ft.Text(
+        f"@{user.get('username', '')}",
+        size=TextSizes.BODY,
+        color=Colors.TEXT_MUTED,
+    )
+
+    bio_text = ft.Text(
+        user.get("bio") or BIO_PLACEHOLDER,
+        size=TextSizes.BODY,
+        color=Colors.TEXT_BODY if user.get("bio") else Colors.TEXT_MUTED,
+    )
+
     user_tags = user.get("tipo") or []
 
     tag_controls: list[ft.Control] = [display_chip(tag) for tag in user_tags]
@@ -84,7 +94,11 @@ def view(page: ft.Page, state: AppState) -> ft.View:
 
     tags_row = ft.Row(wrap=True, spacing=8, run_spacing=8, controls=tag_controls)
 
-    name_field = underline_field("Nombre completo", value=user.get("name") or "")
+    username_field = underline_field(
+        "Nombre de usuario",
+        value=user.get("username") or "",
+        helper="Entre 3 y 30 caracteres: letras, numeros, punto y guion bajo",
+    )
     bio_field = underline_field(
         "Presentacion",
         value=user.get("bio") or "",
@@ -97,12 +111,15 @@ def view(page: ft.Page, state: AppState) -> ft.View:
         page.close(edit_dialog)
 
     def save_profile(e: ft.ControlEvent) -> None:
-        new_name = (name_field.value or "").strip()
+        new_username = (username_field.value or "").strip().lower()
         new_bio = (bio_field.value or "").strip()
 
-        if len(new_name) < 2:
-            name_field.error_text = "Escribe tu nombre"
-            name_field.update()
+        username_field.error_text = None
+        bio_field.error_text = None
+
+        if len(new_username) < 3:
+            username_field.error_text = "Minimo 3 caracteres"
+            username_field.update()
             return
 
         if len(new_bio) > 500:
@@ -112,16 +129,30 @@ def view(page: ft.Page, state: AppState) -> ft.View:
 
         try:
             updated_user = user_service.update_profile(
-                name=new_name,
+                username=new_username,
                 bio=new_bio,
                 include_bio=True,
             )
             state.set_user(updated_user)
+
+            username_text.value = f"@{updated_user.get('username', '')}"
+
+            bio_value = updated_user.get("bio")
+            bio_text.value = bio_value or BIO_PLACEHOLDER
+            bio_text.color = Colors.TEXT_BODY if bio_value else Colors.TEXT_MUTED
+
+            username_text.update()
+            bio_text.update()
+
             close_dialog()
             show_success(page, "Perfil actualizado")
-            page.go("/profile")
+
         except ApiError as error:
-            show_error(page, error.message)
+            if error.field == "username":
+                username_field.error_text = error.message
+                username_field.update()
+            else:
+                show_error(page, error.message)
 
     edit_dialog = ft.AlertDialog(
         modal=True,
@@ -131,7 +162,7 @@ def view(page: ft.Page, state: AppState) -> ft.View:
             content=ft.Column(
                 tight=True,
                 spacing=14,
-                controls=[name_field, bio_field],
+                controls=[username_field, bio_field],
             ),
         ),
         actions=[
@@ -142,69 +173,25 @@ def view(page: ft.Page, state: AppState) -> ft.View:
     )
 
     def open_edit_dialog(e: ft.ControlEvent) -> None:
-        name_field.error_text = None
+        current = state.user or {}
+        username_field.value = current.get("username") or ""
+        bio_field.value = current.get("bio") or ""
+        username_field.error_text = None
         bio_field.error_text = None
         page.open(edit_dialog)
-
-    def placeholder_tile() -> ft.Container:
-        return ft.Container(
-            expand=True,
-            gradient=ft.LinearGradient(
-                begin=ft.alignment.top_center,
-                end=ft.alignment.bottom_center,
-                colors=["#CDE9F8", "#EAF6FC"],
-            ),
-            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            content=ft.Stack(
-                controls=[
-                    ft.Container(
-                        width=46,
-                        height=22,
-                        bgcolor="#FFFFFF",
-                        border_radius=14,
-                        left=14,
-                        top=18,
-                    ),
-                    ft.Container(
-                        width=26,
-                        height=26,
-                        bgcolor="#FFFFFF",
-                        border_radius=13,
-                        left=26,
-                        top=8,
-                    ),
-                    ft.Container(
-                        width=10000,
-                        height=42,
-                        bgcolor="#A8D06A",
-                        border_radius=ft.border_radius.only(top_left=40, top_right=10),
-                        left=0,
-                        bottom=0,
-                    ),
-                    ft.Container(
-                        width=10000,
-                        height=26,
-                        bgcolor="#5E9E13",
-                        border_radius=ft.border_radius.only(top_left=30, top_right=60),
-                        left=0,
-                        bottom=0,
-                    ),
-                ]
-            ),
-        )
 
     def new_post_tile() -> ft.Container:
         return ft.Container(
             bgcolor="#8A8A8A",
             alignment=ft.alignment.center,
             content=ft.Icon(ft.Icons.ADD, size=46, color=Colors.BRAND_DARK),
-            on_click=lambda e: show_error(page, "Publicar aun no esta implementado"),
+            on_click=None,
             ink=True,
+            tooltip="Publicar (proximamente)",
         )
 
     def posts_grid() -> ft.GridView:
         tiles: list[ft.Control] = [new_post_tile()]
-        tiles.extend(placeholder_tile() for _ in range(8))
 
         return ft.GridView(
             controls=tiles,
@@ -237,13 +224,9 @@ def view(page: ft.Page, state: AppState) -> ft.View:
     )
 
     def on_nav_change(e: ft.ControlEvent) -> None:
-        index = e.control.selected_index
-        if index == 3:
-            return
-        names = {0: "El feed", 1: "La busqueda", 2: "Los mensajes"}
-        show_error(page, f"{names.get(index, 'Esa seccion')} aun no esta implementado")
-        e.control.selected_index = 3
-        e.control.update()
+        if e.control.selected_index != 3:
+            e.control.selected_index = 3
+            e.control.update()
 
     return ft.View(
         route="/profile",
@@ -268,34 +251,17 @@ def view(page: ft.Page, state: AppState) -> ft.View:
                                     color=Colors.TEXT_PRIMARY,
                                     font_family=Fonts.HEADING,
                                 ),
-                                ft.Text(
-                                    f"@{user.get('username', '')}",
-                                    size=TextSizes.BODY,
-                                    color=Colors.TEXT_MUTED,
-                                ),
+                                username_text,
                                 tags_row,
                                 ft.Row(
                                     vertical_alignment=ft.CrossAxisAlignment.START,
                                     controls=[
-                                        ft.Container(
-                                            expand=True,
-                                            content=ft.Text(
-                                                user.get("bio")
-                                                or "Agrega una presentacion para que otros "
-                                                "artistas sepan quien eres.",
-                                                size=TextSizes.BODY,
-                                                color=(
-                                                    Colors.TEXT_BODY
-                                                    if user.get("bio")
-                                                    else Colors.TEXT_MUTED
-                                                ),
-                                            ),
-                                        ),
+                                        ft.Container(expand=True, content=bio_text),
                                         ft.IconButton(
                                             icon=ft.Icons.EDIT_SQUARE,
                                             icon_color=Colors.BRAND_DARK,
                                             icon_size=24,
-                                            tooltip="Editar nombre y presentacion",
+                                            tooltip="Editar usuario y presentacion",
                                             on_click=open_edit_dialog,
                                         ),
                                     ],

@@ -64,6 +64,17 @@ def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> User:
     if "name" in provided and provided["name"] is not None:
         user.name = provided["name"].strip()
 
+    if "username" in provided and provided["username"] is not None:
+        new_username = provided["username"]
+
+        if new_username != user.username:
+            taken_by = get_user_by_username(db, new_username)
+            if taken_by is not None:
+                raise ConflictError(
+                    "Ese nombre de usuario ya esta ocupado", field="username"
+                )
+            user.username = new_username
+
     if "bio" in provided:
         user.bio = provided["bio"]
 

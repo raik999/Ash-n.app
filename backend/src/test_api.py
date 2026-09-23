@@ -208,6 +208,62 @@ def main() -> int:
         )
         check("Un usuario normal NO puede crear # (403)", response.status_code == 403, response.text)
 
+        print("\n12. Cambio de nombre de usuario")
+        other_suffix = uuid.uuid4().hex[:8]
+        response = client.post(
+            "/api/auth/register",
+            json={
+                "email": f"otro_{other_suffix}@ashun.cl",
+                "name": "Otro Artista",
+                "username": f"otro_{other_suffix}",
+                "password": password,
+                "confirm_password": password,
+            },
+        )
+        taken_username = response.json()["user"]["username"]
+
+        new_username = f"raik_{suffix}"
+        response = client.patch(
+            "/api/users/me", headers=auth_headers, json={"username": new_username}
+        )
+        check("Cambia el nombre de usuario", response.status_code == 200, response.text)
+        check("El nuevo nombre quedo guardado", response.json()["username"] == new_username)
+
+        response = client.patch(
+            "/api/users/me", headers=auth_headers, json={"username": new_username}
+        )
+        check("Guardar el MISMO nombre no choca consigo mismo", response.status_code == 200)
+
+        response = client.patch(
+            "/api/users/me", headers=auth_headers, json={"username": taken_username}
+        )
+        check("Rechaza un nombre ya ocupado con 409", response.status_code == 409, response.text)
+        check(
+            "Indica que el campo que fallo es 'username'",
+            response.json().get("field") == "username",
+            response.text,
+        )
+
+        response = client.patch(
+            "/api/users/me", headers=auth_headers, json={"username": "con espacios!"}
+        )
+        check("Rechaza un nombre con caracteres invalidos", response.status_code == 422)
+
+        response = client.patch("/api/users/me", headers=auth_headers, json={"username": "ab"})
+        check("Rechaza un nombre demasiado corto", response.status_code == 422)
+
+        response = client.patch(
+            "/api/users/me", headers=auth_headers, json={"username": f"MAYUS_{suffix}"}
+        )
+        check(
+            "Normaliza el nombre a minusculas",
+            response.json()["username"] == f"mayus_{suffix}",
+            response.text,
+        )
+
+        response = client.get("/api/auth/me", headers=auth_headers)
+        check("La sesion sigue valida tras cambiar el nombre", response.status_code == 200)
+
     print("\n" + "=" * 60)
     if FAILURES == 0:
         print("TODAS LAS PRUEBAS PASARON")

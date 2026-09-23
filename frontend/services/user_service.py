@@ -1,14 +1,13 @@
 from __future__ import annotations
-
 from datetime import date
 from typing import Any
-
 from services.api_client import api
 
 
 def update_profile(
     *,
     name: str | None = None,
+    username: str | None = None,
     bio: str | None = None,
     birthdate: date | None = None,
     tag_ids: list[int] | None = None,
@@ -18,6 +17,9 @@ def update_profile(
 
     if name is not None:
         payload["name"] = name
+
+    if username is not None:
+        payload["username"] = username
 
     if include_bio:
         payload["bio"] = bio

@@ -2,6 +2,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from entities.user import UserRole
+from validations.auth_validation import USERNAME_PATTERN
 
 
 class TagResponse(BaseModel):
@@ -32,9 +33,24 @@ class UserResponse(BaseModel):
 
 class UpdateProfileRequest(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=80)
+    username: str | None = Field(default=None, min_length=3, max_length=30)
     bio: str | None = Field(default=None, max_length=500)
     birthdate: date | None = None
     tag_ids: list[int] | None = None
+
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+
+        value = value.strip().lower()
+        if not USERNAME_PATTERN.match(value):
+            raise ValueError(
+                "El nombre de usuario solo puede tener letras, numeros, punto "
+                "y guion bajo, y debe medir entre 3 y 30 caracteres"
+            )
+        return value
 
     @field_validator("bio")
     @classmethod
