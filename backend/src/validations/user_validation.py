@@ -1,11 +1,7 @@
 from __future__ import annotations
-
 from datetime import date, datetime
-
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
-
 from entities.user import UserRole
-
 from validations.auth_validation import USERNAME_PATTERN
 
 

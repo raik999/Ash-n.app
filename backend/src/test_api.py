@@ -264,6 +264,135 @@ def main() -> int:
         response = client.get("/api/auth/me", headers=auth_headers)
         check("La sesion sigue valida tras cambiar el nombre", response.status_code == 200)
 
+        print("\n13. Cambio de correo")
+        new_email = f"nuevo_{suffix}@ashun.cl"
+        response = client.patch("/api/users/me", headers=auth_headers, json={"email": new_email})
+        check("Cambia el correo", response.status_code == 200, response.text)
+        check("El correo nuevo quedo guardado", response.json()["email"] == new_email)
+
+        response = client.patch(
+            "/api/users/me", headers=auth_headers, json={"email": f"otro_{other_suffix}@ashun.cl"}
+        )
+        check("Rechaza un correo ya registrado con 409", response.status_code == 409, response.text)
+
+        response = client.patch(
+            "/api/users/me", headers=auth_headers, json={"email": "esto-no-es-un-correo"}
+        )
+        check("Rechaza un correo mal formado", response.status_code == 422)
+
+        response = client.post(
+            "/api/auth/login", json={"identifier": new_email, "password": password}
+        )
+        check("Se puede iniciar sesion con el correo nuevo", response.status_code == 200)
+
+        print("\n14. Cambio de contrasena")
+        new_password = "nuevaClave456"
+
+        response = client.patch(
+            "/api/users/me/password",
+            headers=auth_headers,
+            json={
+                "current_password": "estanoes",
+                "new_password": new_password,
+                "confirm_password": new_password,
+            },
+        )
+        check("Rechaza una contrasena actual incorrecta", response.status_code == 400, response.text)
+        check(
+            "Indica que el campo que fallo es 'current_password'",
+            response.json().get("field") == "current_password",
+            response.text,
+        )
+
+        response = client.patch(
+            "/api/users/me/password",
+            headers=auth_headers,
+            json={
+                "current_password": password,
+                "new_password": new_password,
+                "confirm_password": "otracosa789",
+            },
+        )
+        check("Rechaza cuando las dos nuevas no coinciden", response.status_code == 422)
+
+        response = client.patch(
+            "/api/users/me/password",
+            headers=auth_headers,
+            json={
+                "current_password": password,
+                "new_password": password,
+                "confirm_password": password,
+            },
+        )
+        check("Rechaza repetir la contrasena actual", response.status_code == 422, response.text)
+
+        response = client.patch(
+            "/api/users/me/password",
+            headers=auth_headers,
+            json={"current_password": password, "new_password": "123", "confirm_password": "123"},
+        )
+        check("Rechaza una contrasena nueva demasiado corta", response.status_code == 422)
+
+        response = client.patch(
+            "/api/users/me/password",
+            headers=auth_headers,
+            json={
+                "current_password": password,
+                "new_password": new_password,
+                "confirm_password": new_password,
+            },
+        )
+        check("Cambia la contrasena", response.status_code == 200, response.text)
+
+        response = client.post(
+            "/api/auth/login", json={"identifier": new_email, "password": password}
+        )
+        check("La contrasena ANTIGUA ya no sirve", response.status_code == 401)
+
+        response = client.post(
+            "/api/auth/login", json={"identifier": new_email, "password": new_password}
+        )
+        check("La contrasena NUEVA si sirve", response.status_code == 200, response.text)
+
+        response = client.get("/api/auth/me", headers=auth_headers)
+        check("El token anterior sigue siendo valido", response.status_code == 200)
+
+        print("\n15. Eliminar la cuenta")
+        me = client.get("/api/auth/me", headers=auth_headers).json()
+        current_username = me["username"]
+        avatar_path = me.get("avatar_url")
+
+        response = client.request(
+            "DELETE",
+            "/api/users/me",
+            headers=auth_headers,
+            json={"password": "contrasenaequivocada"},
+        )
+        check("Rechaza el borrado con la contrasena incorrecta", response.status_code == 400)
+
+        response = client.get("/api/auth/me", headers=auth_headers)
+        check("La cuenta sigue existiendo tras el intento fallido", response.status_code == 200)
+
+        response = client.request(
+            "DELETE", "/api/users/me", headers=auth_headers, json={"password": new_password}
+        )
+        check("Elimina la cuenta", response.status_code == 200, response.text)
+
+        response = client.get("/api/auth/me", headers=auth_headers)
+        check("El token deja de servir tras eliminar la cuenta", response.status_code == 401)
+
+        response = client.post(
+            "/api/auth/login", json={"identifier": new_email, "password": new_password}
+        )
+        check("Ya no se puede iniciar sesion con esa cuenta", response.status_code == 401)
+
+        response = client.get(f"/api/users/{current_username}")
+        check("El perfil publico ya no existe", response.status_code == 404)
+
+        if avatar_path:
+            response = client.get(avatar_path)
+            check("La foto de perfil se borro del disco", response.status_code == 404, avatar_path)
+
     print("\n" + "=" * 60)
     if FAILURES == 0:
         print("TODAS LAS PRUEBAS PASARON")
