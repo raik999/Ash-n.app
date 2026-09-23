@@ -20,18 +20,13 @@ class UserRole(str, enum.Enum):
 
 
 class User(Base, TimestampMixin):
+
     __tablename__ = "users"
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-
     name: Mapped[str] = mapped_column(String(80), nullable=False)
-
     username: Mapped[str] = mapped_column(String(30), unique=True, nullable=False, index=True)
-
     email: Mapped[str] = mapped_column(String(160), unique=True, nullable=False, index=True)
-
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, name="user_role", values_callable=lambda e: [m.value for m in e]),
         nullable=False,
@@ -40,11 +35,8 @@ class User(Base, TimestampMixin):
     )
 
     birthdate: Mapped[date | None] = mapped_column(Date, nullable=True)
-
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
-
     avatar_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
-
     tags: Mapped[list[Tag]] = relationship(
         secondary=user_tags,
         back_populates="users",

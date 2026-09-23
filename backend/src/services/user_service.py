@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from entities.tag import Tag
@@ -23,6 +22,21 @@ def get_user_by_email(db: Session, email: str) -> User | None:
 def get_user_by_username(db: Session, username: str) -> User | None:
     statement = select(User).where(User.username == username.lower())
     return db.execute(statement).scalar_one_or_none()
+
+
+def search_users(db: Session, query: str, limit: int = 20) -> list[User]:
+    query = query.strip().lower()
+
+    if not query:
+        return []
+
+    statement = (
+        select(User)
+        .where(User.username.startswith(query, autoescape=True))
+        .order_by(User.username)
+        .limit(limit)
+    )
+    return list(db.execute(statement).scalars().all())
 
 
 def get_user_by_identifier(db: Session, identifier: str) -> User | None:
