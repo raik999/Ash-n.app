@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import secrets
-from pathlib import Path
 
+from pathlib import Path
 from config.settings import settings
 from middleware.error_middleware import ValidationError
 

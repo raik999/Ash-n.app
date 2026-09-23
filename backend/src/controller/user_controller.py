@@ -4,7 +4,13 @@ from entities.user import User
 from middleware.error_middleware import NotFoundError
 from services import storage_service, user_service
 from validations.auth_validation import MessageResponse
-from validations.user_validation import AvatarResponse, UpdateProfileRequest, UserResponse
+from validations.user_validation import (
+    AvatarResponse,
+    PublicUserResponse,
+    UpdateProfileRequest,
+    UserResponse,
+    UserSummaryResponse,
+)
 
 
 def update_my_profile(
@@ -52,9 +58,13 @@ def delete_my_account(db: Session, current_user: User, password: str) -> Message
     return MessageResponse(detail="Cuenta eliminada")
 
 
-def get_user_profile(db: Session, username: str) -> UserResponse:
+def search_users(db: Session, query: str, limit: int = 20) -> list[UserSummaryResponse]:
+    users = user_service.search_users(db, query, limit)
+    return [UserSummaryResponse.model_validate(user) for user in users]
+
+
+def get_user_profile(db: Session, username: str) -> PublicUserResponse:
     user = user_service.get_user_by_username(db, username)
     if user is None:
         raise NotFoundError(f"No existe el usuario @{username}")
-    return UserResponse.model_validate(user)
-
+    return PublicUserResponse.model_validate(user)
