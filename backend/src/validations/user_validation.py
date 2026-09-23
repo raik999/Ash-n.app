@@ -31,6 +31,27 @@ class UserResponse(BaseModel):
     )
 
 
+class PublicUserResponse(BaseModel):
+    id: int
+    name: str
+    username: str
+    bio: str | None = None
+    avatar_url: str | None = None
+    tags: list[TagResponse] = Field(default_factory=list, alias="tipo")
+    created_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class UserSummaryResponse(BaseModel):
+    id: int
+    username: str
+    name: str
+    avatar_url: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UpdateProfileRequest(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=80)
     username: str | None = Field(default=None, min_length=3, max_length=30)
