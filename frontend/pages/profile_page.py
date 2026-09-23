@@ -21,8 +21,8 @@ def view(page: ft.Page, state: AppState) -> ft.View:
 
     user = state.user
 
-    def go_to_avatar(e: ft.ControlEvent) -> None:
-        page.go("/profile/avatar")
+    def go_to_settings(e: ft.ControlEvent) -> None:
+        page.go("/settings")
 
     def go_to_tags(e: ft.ControlEvent) -> None:
         page.go("/profile/tags")
@@ -44,31 +44,14 @@ def view(page: ft.Page, state: AppState) -> ft.View:
                         icon=ft.Icons.SETTINGS,
                         icon_color=Colors.BRAND_DARK,
                         icon_size=30,
-                        tooltip="Ajustes (proximamente)",
-                        on_click=None,
+                        tooltip="Configuración",
+                        on_click=go_to_settings,
                     ),
                     right=8,
                     top=8,
                 ),
-                ft.Container(
-                    content=ft.IconButton(
-                        icon=ft.Icons.EDIT_SQUARE,
-                        icon_color=Colors.BRAND_DARK,
-                        icon_size=26,
-                        tooltip="Cambiar foto de perfil",
-                        on_click=go_to_avatar,
-                    ),
-                    right=10,
-                    bottom=6,
-                ),
             ]
         ),
-    )
-
-    username_text = ft.Text(
-        f"@{user.get('username', '')}",
-        size=TextSizes.BODY,
-        color=Colors.TEXT_MUTED,
     )
 
     bio_text = ft.Text(
@@ -94,11 +77,6 @@ def view(page: ft.Page, state: AppState) -> ft.View:
 
     tags_row = ft.Row(wrap=True, spacing=8, run_spacing=8, controls=tag_controls)
 
-    username_field = underline_field(
-        "Nombre de usuario",
-        value=user.get("username") or "",
-        helper="Entre 3 y 30 caracteres: letras, numeros, punto y guion bajo",
-    )
     bio_field = underline_field(
         "Presentacion",
         value=user.get("bio") or "",
@@ -111,16 +89,8 @@ def view(page: ft.Page, state: AppState) -> ft.View:
         page.close(edit_dialog)
 
     def save_profile(e: ft.ControlEvent) -> None:
-        new_username = (username_field.value or "").strip().lower()
         new_bio = (bio_field.value or "").strip()
-
-        username_field.error_text = None
         bio_field.error_text = None
-
-        if len(new_username) < 3:
-            username_field.error_text = "Minimo 3 caracteres"
-            username_field.update()
-            return
 
         if len(new_bio) > 500:
             bio_field.error_text = "Maximo 500 caracteres"
@@ -129,41 +99,31 @@ def view(page: ft.Page, state: AppState) -> ft.View:
 
         try:
             updated_user = user_service.update_profile(
-                username=new_username,
                 bio=new_bio,
                 include_bio=True,
             )
             state.set_user(updated_user)
 
-            username_text.value = f"@{updated_user.get('username', '')}"
-
             bio_value = updated_user.get("bio")
             bio_text.value = bio_value or BIO_PLACEHOLDER
             bio_text.color = Colors.TEXT_BODY if bio_value else Colors.TEXT_MUTED
 
-            username_text.update()
             bio_text.update()
 
             close_dialog()
-            show_success(page, "Perfil actualizado")
+            show_success(page, "Presentación actualizada")
 
         except ApiError as error:
-            if error.field == "username":
-                username_field.error_text = error.message
-                username_field.update()
-            else:
-                show_error(page, error.message)
+            show_error(page, error.message)
 
     edit_dialog = ft.AlertDialog(
         modal=True,
-        title=ft.Text("Editar perfil", weight=ft.FontWeight.BOLD, color=Colors.TEXT_PRIMARY),
+        title=ft.Text(
+            "Editar presentación", weight=ft.FontWeight.BOLD, color=Colors.TEXT_PRIMARY
+        ),
         content=ft.Container(
             width=340,
-            content=ft.Column(
-                tight=True,
-                spacing=14,
-                controls=[username_field, bio_field],
-            ),
+            content=ft.Column(tight=True, spacing=14, controls=[bio_field]),
         ),
         actions=[
             ft.TextButton("Cancelar", on_click=close_dialog),
@@ -173,10 +133,7 @@ def view(page: ft.Page, state: AppState) -> ft.View:
     )
 
     def open_edit_dialog(e: ft.ControlEvent) -> None:
-        current = state.user or {}
-        username_field.value = current.get("username") or ""
-        bio_field.value = current.get("bio") or ""
-        username_field.error_text = None
+        bio_field.value = (state.user or {}).get("bio") or ""
         bio_field.error_text = None
         page.open(edit_dialog)
 
@@ -223,16 +180,11 @@ def view(page: ft.Page, state: AppState) -> ft.View:
         expand=True,
     )
 
-    def on_nav_change(e: ft.ControlEvent) -> None:
-        if e.control.selected_index != 3:
-            e.control.selected_index = 3
-            e.control.update()
-
     return ft.View(
         route="/profile",
         padding=0,
         spacing=0,
-        navigation_bar=bottom_nav(selected=3, on_change=on_nav_change),
+        navigation_bar=bottom_nav(selected=3),
         controls=[
             ft.Column(
                 spacing=0,
@@ -251,7 +203,11 @@ def view(page: ft.Page, state: AppState) -> ft.View:
                                     color=Colors.TEXT_PRIMARY,
                                     font_family=Fonts.HEADING,
                                 ),
-                                username_text,
+                                ft.Text(
+                                    f"@{user.get('username', '')}",
+                                    size=TextSizes.BODY,
+                                    color=Colors.TEXT_MUTED,
+                                ),
                                 tags_row,
                                 ft.Row(
                                     vertical_alignment=ft.CrossAxisAlignment.START,
@@ -261,7 +217,7 @@ def view(page: ft.Page, state: AppState) -> ft.View:
                                             icon=ft.Icons.EDIT_SQUARE,
                                             icon_color=Colors.BRAND_DARK,
                                             icon_size=24,
-                                            tooltip="Editar usuario y presentacion",
+                                            tooltip="Editar presentación",
                                             on_click=open_edit_dialog,
                                         ),
                                     ],

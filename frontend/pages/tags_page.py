@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from typing import Any
 
 import flet as ft
@@ -88,7 +87,7 @@ def view(page: ft.Page, state: AppState, next_route: str = "/onboarding/avatar")
     refresh_chips()
 
     return ft.View(
-        route="/onboarding/tags",
+        route=page.route,
         padding=0,
         controls=[
             screen(
