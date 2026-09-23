@@ -9,7 +9,9 @@ from pages import (
     birthdate_page,
     login_page,
     profile_page,
+    public_profile_page,
     register_page,
+    search_page,
     settings_page,
     tags_page,
 )
@@ -52,12 +54,21 @@ def main(page: ft.Page) -> None:
             "/settings/account/avatar": lambda: avatar_page.view(
                 page, state, "/settings/account"
             ),
+            "/search": lambda: search_page.view(page, state),
         }
 
         public_routes = {"/login", "/register"}
         if route not in public_routes and not state.is_authenticated:
             page.go("/login")
             return
+
+        if route.startswith("/user/"):
+            target_username = route.removeprefix("/user/")
+            if target_username:
+                page.views.clear()
+                page.views.append(public_profile_page.view(page, state, target_username))
+                page.update()
+                return
 
         builder = routes.get(route)
         if builder is None:
