@@ -258,7 +258,7 @@ def view(page: ft.Page, state: AppState) -> ft.View:
         padding=0,
         spacing=0,
         bgcolor=Colors.BACKGROUND,
-        navigation_bar=bottom_nav(selected=3),
+        navigation_bar=bottom_nav(page, selected=3),
         controls=[
             ft.Column(
                 spacing=0,
