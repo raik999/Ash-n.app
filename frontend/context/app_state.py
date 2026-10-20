@@ -1,7 +1,4 @@
 from __future__ import annotations
-
-import json
-
 from typing import Any
 
 import flet as ft
@@ -10,27 +7,27 @@ from services import auth_service
 from services.api_client import ApiError, api
 
 STORAGE_TOKEN_KEY = "ashun.token"
-STORAGE_RECENTS_KEY = "ashun.recents"
-MAX_RECENTS = 12
-
+LEGACY_RECENTS_KEY = "ashun.recents"
 
 class AppState:
     def __init__(self, page: ft.Page):
         self.page = page
-
         self.user: dict[str, Any] | None = None
-
         self.tags: list[dict[str, Any]] = []
+        self._recents: list[dict[str, str]] | None = None
+        self._drop_legacy_recents()
 
     def save_session(self, token: str, user: dict[str, Any]) -> None:
         self.user = user
         api.set_token(token)
         self.page.client_storage.set(STORAGE_TOKEN_KEY, token)
+        self._recents = None
 
     def clear_session(self) -> None:
         self.user = None
         api.set_token(None)
         self.page.client_storage.remove(STORAGE_TOKEN_KEY)
+        self._recents = None
 
     def try_restore_session(self) -> bool:
         token = self.page.client_storage.get(STORAGE_TOKEN_KEY)
@@ -67,37 +64,61 @@ class AppState:
         return api.absolute_url(self.user.get("avatar_url"))
 
 
-    def load_recents(self) -> list[dict[str, str]]:
-        raw = self.page.client_storage.get(STORAGE_RECENTS_KEY)
+    def load_recents(self, force: bool = False) -> list[dict[str, str]]:
+        if self._recents is not None and not force:
+            return self._recents
 
-        if not raw:
-            return []
+        if not self.is_authenticated:
+            self._recents = []
+            return self._recents
+
+        from services import search_service
 
         try:
-            data = json.loads(raw)
-        except (ValueError, TypeError):
+            entries = search_service.list_history()
+        except ApiError:
             return []
 
-        return [
-            item
-            for item in data
-            if isinstance(item, dict) and "kind" in item and "value" in item
+        self._recents = [
+            {"kind": entry["kind"], "value": entry["value"]} for entry in entries
         ]
+        return self._recents
 
     def add_recent(self, kind: str, value: str) -> None:
         value = value.strip()
         if not value:
             return
+        
+        if not self.is_authenticated:
+            return
+        
+        from services import search_service
 
-        recents = self.load_recents()
+        try:
+            entries = search_service.add_history(kind, value)
+        except ApiError:
+            self._recents = None
+            return
 
-        recents = [r for r in recents if not (r["kind"] == kind and r["value"] == value)]
-        recents.insert(0, {"kind": kind, "value": value})
-
-        self.page.client_storage.set(STORAGE_RECENTS_KEY, json.dumps(recents[:MAX_RECENTS]))
+        self._recents = [
+            {"kind": entry["kind"], "value": entry["value"]} for entry in entries
+        ]
 
     def clear_recents(self) -> None:
-        self.page.client_storage.remove(STORAGE_RECENTS_KEY)
+        if not self.is_authenticated:
+            self._recents = []
+            return
+
+        from services import search_service
+
+        search_service.clear_history()
+        self._recents = []
+
+    def _drop_legacy_recents(self) -> None:
+        try:
+            self.page.client_storage.remove(LEGACY_RECENTS_KEY)
+        except Exception:
+            pass
 
     def load_tags(self, force: bool = False) -> list[dict[str, Any]]:
         if self.tags and not force:
