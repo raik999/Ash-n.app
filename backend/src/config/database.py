@@ -27,6 +27,7 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_database() -> None:
     from entities.base import Base
+    from entities.search_history import SearchHistory
     from entities.tag import Tag
     from entities.user import User
 
