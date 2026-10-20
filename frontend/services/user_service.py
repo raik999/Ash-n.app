@@ -3,7 +3,6 @@ from datetime import date
 from typing import Any
 from services.api_client import api
 
-
 def update_profile(
     *,
     name: str | None = None,
@@ -38,14 +37,11 @@ def update_profile(
 
     return api.patch("/api/users/me", payload)
 
-
 def upload_avatar(filename: str, content: bytes, mime: str) -> dict[str, Any]:
     return api.upload("/api/users/me/avatar", "file", filename, content, mime)
 
-
 def delete_avatar() -> dict[str, Any]:
     return api.delete("/api/users/me/avatar")
-
 
 def change_password(
     current_password: str, new_password: str, confirm_password: str
@@ -59,17 +55,8 @@ def change_password(
         },
     )
 
-
 def delete_account(password: str) -> dict[str, Any]:
     return api.delete("/api/users/me", {"password": password})
-
-
-def search_users(query: str, limit: int = 20) -> list[dict[str, Any]]:
-    from urllib.parse import urlencode
-
-    query_string = urlencode({"q": query, "limit": limit})
-    return api.get(f"/api/users?{query_string}")
-
 
 def get_public_profile(username: str) -> dict[str, Any]:
     return api.get(f"/api/users/{username}")
