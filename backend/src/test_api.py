@@ -414,7 +414,153 @@ def main() -> int:
         response = client.get("/api/auth/me", headers=auth_headers)
         check("El token anterior sigue siendo valido", response.status_code == 200)
 
-        print("\n16. Eliminar la cuenta")
+        print("\n16. Historial de busquedas (uno para cada usuario)")
+        response = client.get("/api/users/me/searches")
+        check("El historial sin token responde 401", response.status_code == 401)
+
+        response = client.get("/api/users/me/searches", headers=auth_headers)
+        check("GET /api/users/me/searches responde 200", response.status_code == 200, response.text)
+        check("Un usuario recien creado tiene el historial vacio", response.json() == [], response.text)
+
+        response = client.post(
+            "/api/users/me/searches",
+            headers=auth_headers,
+            json={"kind": "query", "value": "acuarela"},
+        )
+        check("Guarda una busqueda", response.status_code == 200, response.text)
+        check(
+            "Devuelve el historial ya actualizado",
+            [e["value"] for e in response.json()] == ["acuarela"],
+            response.text,
+        )
+        entry = response.json()[0]
+        check("Cada entrada trae id, kind y value", set(entry) == {"id", "kind", "value"}, str(entry))
+
+        response = client.post(
+            "/api/users/me/searches",
+            headers=auth_headers,
+            json={"kind": "user", "value": "raik"},
+        )
+        check(
+            "La busqueda mas nueva queda primera",
+            [e["value"] for e in response.json()] == ["raik", "acuarela"],
+            response.text,
+        )
+        check(
+            "Guarda el tipo, que es lo que decide el icono",
+            response.json()[0]["kind"] == "user",
+            response.text,
+        )
+
+        response = client.post(
+            "/api/users/me/searches",
+            headers=auth_headers,
+            json={"kind": "query", "value": "acuarela"},
+        )
+        values = [e["value"] for e in response.json()]
+        check("Repetir una busqueda no la duplica", values == ["acuarela", "raik"], response.text)
+
+        response = client.post(
+            "/api/users/me/searches",
+            headers=auth_headers,
+            json={"kind": "publicacion", "value": "x"},
+        )
+        check("Rechaza un tipo que no existe", response.status_code == 422, response.text)
+
+        response = client.post(
+            "/api/users/me/searches", headers=auth_headers, json={"kind": "query", "value": "   "}
+        )
+        check("Rechaza una busqueda que solo tiene espacios", response.status_code == 422, response.text)
+
+        response = client.post(
+            "/api/users/me/searches",
+            headers=auth_headers,
+            json={"kind": "query", "value": "a" * 61},
+        )
+        check("Rechaza un texto mas largo que la columna", response.status_code == 422, response.text)
+
+        for numero in range(15):
+            response = client.post(
+                "/api/users/me/searches",
+                headers=auth_headers,
+                json={"kind": "query", "value": f"busqueda{numero}"},
+            )
+        historial = response.json()
+        check("El historial se recorta a 12 entradas", len(historial) == 12, str(len(historial)))
+        check(
+            "Las que se conservan son las mas nuevas",
+            historial[0]["value"] == "busqueda14",
+            str([e["value"] for e in historial]),
+        )
+
+        b_suffix = uuid.uuid4().hex[:8]
+        response = client.post(
+            "/api/auth/register",
+            json={
+                "email": f"bea_{b_suffix}@ashun.cl",
+                "name": "Beatriz Artista",
+                "username": f"bea_{b_suffix}",
+                "password": password,
+                "confirm_password": password,
+            },
+        )
+        b_headers = {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+        response = client.get("/api/users/me/searches", headers=b_headers)
+        check(
+            "Un segundo usuario NO ve el historial del primero",
+            response.json() == [],
+            response.text,
+        )
+
+        response = client.post(
+            "/api/users/me/searches",
+            headers=b_headers,
+            json={"kind": "query", "value": "solo_de_beatriz"},
+        )
+        check(
+            "El segundo usuario guarda en SU propio historial",
+            [e["value"] for e in response.json()] == ["solo_de_beatriz"],
+            response.text,
+        )
+
+        response = client.get("/api/users/me/searches", headers=auth_headers)
+        a_values = [e["value"] for e in response.json()]
+        check(
+            "La busqueda del segundo usuario no aparece en el primero",
+            "solo_de_beatriz" not in a_values,
+            str(a_values),
+        )
+        check("El primer usuario conserva sus 12 busquedas", len(a_values) == 12, str(len(a_values)))
+
+        response = client.delete("/api/users/me/searches", headers=b_headers)
+        check("Elimina el historial del segundo usuario", response.status_code == 200, response.text)
+
+        response = client.get("/api/users/me/searches", headers=b_headers)
+        check("El historial del segundo usuario quedo vacio", response.json() == [], response.text)
+
+        response = client.get("/api/users/me/searches", headers=auth_headers)
+        check(
+            "Borrar el historial de uno NO borra el del otro",
+            len(response.json()) == 12,
+            response.text,
+        )
+
+        client.post(
+            "/api/users/me/searches",
+            headers=b_headers,
+            json={"kind": "query", "value": "ultima"},
+        )
+        response = client.request(
+            "DELETE", "/api/users/me", headers=b_headers, json={"password": password}
+        )
+        check(
+            "Se puede eliminar una cuenta que tiene historial (cascada)",
+            response.status_code == 200,
+            response.text,
+        )
+
+        print("\n17. Eliminar la cuenta")
         me = client.get("/api/auth/me", headers=auth_headers).json()
         current_username = me["username"]
         avatar_path = me.get("avatar_url")

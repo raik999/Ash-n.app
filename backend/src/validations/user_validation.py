@@ -9,7 +9,6 @@ class TagResponse(BaseModel):
     id: int
     name: str
     color: str
-
     model_config = ConfigDict(from_attributes=True)
 
 

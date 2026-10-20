@@ -28,13 +28,9 @@ user_tags = Table(
 
 class Tag(Base, TimestampMixin):
     __tablename__ = "tags"
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-
     name: Mapped[str] = mapped_column(String(40), unique=True, nullable=False, index=True)
-
     color: Mapped[str] = mapped_column(String(9), nullable=False, default="#7C7C7C")
-
     users: Mapped[list[User]] = relationship(
         secondary=user_tags,
         back_populates="tags",
