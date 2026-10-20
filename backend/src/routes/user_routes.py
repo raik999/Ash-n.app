@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.orm import Session
 from config.database import get_db
-from controller import user_controller
+from controller import search_controller, user_controller
 from entities.user import User
 from middleware.auth_middleware import get_current_user
 from validations.auth_validation import MessageResponse
+from validations.search_validation import AddSearchRequest, SearchHistoryEntry
 from validations.user_validation import (
     AvatarResponse,
     ChangePasswordRequest,
@@ -16,7 +17,6 @@ from validations.user_validation import (
 )
 
 router = APIRouter(prefix="/api/users", tags=["Usuarios"])
-
 
 @router.patch(
     "/me",
@@ -95,6 +95,43 @@ def delete_my_avatar(
 
 
 @router.get(
+    "/me/searches",
+    response_model=list[SearchHistoryEntry],
+    summary="Mis busquedas recientes",
+)
+def list_my_searches(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[SearchHistoryEntry]:
+    return search_controller.list_my_searches(db, current_user)
+
+
+@router.post(
+    "/me/searches",
+    response_model=list[SearchHistoryEntry],
+    summary="Guardar una busqueda en mi historial",
+)
+def add_my_search(
+    payload: AddSearchRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[SearchHistoryEntry]:
+    return search_controller.add_my_search(db, current_user, payload)
+
+
+@router.delete(
+    "/me/searches",
+    response_model=MessageResponse,
+    summary="Eliminar todas mis busquedas",
+)
+def clear_my_searches(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    return search_controller.clear_my_searches(db, current_user)
+
+
+@router.get(
     "",
     response_model=list[UserSummaryResponse],
     summary="Buscar artistas por nombre de usuario",
@@ -105,7 +142,7 @@ def search_users(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[UserSummaryResponse]:
-    return user_controller.search_users(db, q, limit)
+    return search_controller.search_users(db, q, limit)
 
 
 @router.get(
