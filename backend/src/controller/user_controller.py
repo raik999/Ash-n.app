@@ -9,7 +9,6 @@ from validations.user_validation import (
     PublicUserResponse,
     UpdateProfileRequest,
     UserResponse,
-    UserSummaryResponse,
 )
 
 
@@ -56,11 +55,6 @@ def change_my_password(
 def delete_my_account(db: Session, current_user: User, password: str) -> MessageResponse:
     user_service.delete_account(db, current_user, password)
     return MessageResponse(detail="Cuenta eliminada")
-
-
-def search_users(db: Session, query: str, limit: int = 20) -> list[UserSummaryResponse]:
-    users = user_service.search_users(db, query, limit)
-    return [UserSummaryResponse.model_validate(user) for user in users]
 
 
 def get_user_profile(db: Session, username: str) -> PublicUserResponse:
