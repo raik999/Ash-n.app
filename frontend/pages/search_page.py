@@ -6,7 +6,7 @@ import flet as ft
 from components.feedback import avatar_view, show_error
 from components.layout import bottom_nav
 from context.app_state import AppState
-from services import user_service
+from services import search_service
 from services.api_client import ApiError
 from style.theme import Colors, Sizes, TextSizes
 
@@ -312,7 +312,7 @@ def view(page: ft.Page, state: AppState) -> ft.View:
             return
 
         try:
-            ui["results"] = user_service.search_users(text)
+            ui["results"] = search_service.search_users(text)
         except ApiError as error:
             show_error(page, error.message)
             ui["results"] = []
@@ -332,7 +332,10 @@ def view(page: ft.Page, state: AppState) -> ft.View:
         page.go(f"/user/{username}")
 
     def wipe_recents() -> None:
-        state.clear_recents()
+        try:
+            state.clear_recents()
+        except ApiError as error:
+            show_error(page, error.message)
         render()
 
     render()
