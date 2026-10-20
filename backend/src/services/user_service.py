@@ -13,31 +13,13 @@ def get_user_by_id(db: Session, user_id: int) -> User | None:
     statement = select(User).where(User.id == user_id)
     return db.execute(statement).scalar_one_or_none()
 
-
 def get_user_by_email(db: Session, email: str) -> User | None:
     statement = select(User).where(User.email == email.lower())
     return db.execute(statement).scalar_one_or_none()
 
-
 def get_user_by_username(db: Session, username: str) -> User | None:
     statement = select(User).where(User.username == username.lower())
     return db.execute(statement).scalar_one_or_none()
-
-
-def search_users(db: Session, query: str, limit: int = 20) -> list[User]:
-    query = query.strip().lower()
-
-    if not query:
-        return []
-
-    statement = (
-        select(User)
-        .where(User.username.startswith(query, autoescape=True))
-        .order_by(User.username)
-        .limit(limit)
-    )
-    return list(db.execute(statement).scalars().all())
-
 
 def get_user_by_identifier(db: Session, identifier: str) -> User | None:
     identifier = identifier.strip().lower()
@@ -45,7 +27,6 @@ def get_user_by_identifier(db: Session, identifier: str) -> User | None:
         (User.email == identifier) | (User.username == identifier)
     )
     return db.execute(statement).scalar_one_or_none()
-
 
 def create_user(db: Session, data: RegisterRequest) -> User:
     email = data.email.lower()
@@ -70,13 +51,11 @@ def create_user(db: Session, data: RegisterRequest) -> User:
     db.refresh(user)
     return user
 
-
 def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> User:
     provided = data.model_dump(exclude_unset=True)
 
     if "name" in provided and provided["name"] is not None:
         user.name = provided["name"].strip()
-
     if "username" in provided and provided["username"] is not None:
         new_username = provided["username"]
 
@@ -90,7 +69,6 @@ def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> User:
 
     if "email" in provided and provided["email"] is not None:
         new_email = provided["email"].lower()
-
         if new_email != user.email:
             taken_by = get_user_by_email(db, new_email)
             if taken_by is not None:
@@ -99,17 +77,14 @@ def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> User:
 
     if "bio" in provided:
         user.bio = provided["bio"]
-
     if "birthdate" in provided:
         user.birthdate = provided["birthdate"]
-
     if "tag_ids" in provided and provided["tag_ids"] is not None:
         user.tags = _resolve_tags(db, provided["tag_ids"])
 
     db.commit()
     db.refresh(user)
     return user
-
 
 def _resolve_tags(db: Session, tag_ids: list[int]) -> list[Tag]:
     if not tag_ids:
@@ -126,13 +101,11 @@ def _resolve_tags(db: Session, tag_ids: list[int]) -> list[Tag]:
     by_id = {tag.id: tag for tag in found}
     return [by_id[tid] for tid in tag_ids]
 
-
 def set_avatar(db: Session, user: User, avatar_url: str) -> User:
     user.avatar_url = avatar_url
     db.commit()
     db.refresh(user)
     return user
-
 
 def change_password(db: Session, user: User, current: str, new: str) -> User:
     if not verify_password(current, user.password_hash):
@@ -142,7 +115,6 @@ def change_password(db: Session, user: User, current: str, new: str) -> User:
     db.commit()
     db.refresh(user)
     return user
-
 
 def delete_account(db: Session, user: User, password: str) -> None:
     if not verify_password(password, user.password_hash):
@@ -156,7 +128,6 @@ def delete_account(db: Session, user: User, password: str) -> None:
     db.delete(user)
     db.commit()
 
-
 def authenticate(db: Session, identifier: str, password: str) -> User:
     user = get_user_by_identifier(db, identifier)
 
@@ -168,7 +139,6 @@ def authenticate(db: Session, identifier: str, password: str) -> User:
         raise _invalid_credentials()
 
     return user
-
 
 def _invalid_credentials():
     from middleware.error_middleware import UnauthorizedError
