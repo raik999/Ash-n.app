@@ -13,3 +13,4 @@ if __name__ == "__main__":
         view=ft.AppView.WEB_BROWSER if use_web else ft.AppView.FLET_APP,
         port=8550 if use_web else 0,
     )
+
