@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from typing import Any
 
 import flet as ft
@@ -132,3 +131,4 @@ class AppState:
 
         self.tags = await tag_service.list_tags()
         return self.tags
+    
