@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import mimetypes
+
 from pathlib import Path
 
 import flet as ft
