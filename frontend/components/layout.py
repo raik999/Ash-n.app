@@ -4,6 +4,12 @@ import flet as ft
 
 from style.theme import Colors, Sizes, page_gradient
 
+def safe_update(*controls: ft.Control) -> None:
+    for control in controls:
+        try:
+            control.update()
+        except (RuntimeError, AssertionError):
+            pass
 
 def screen(
     *controls: ft.Control,
@@ -24,30 +30,27 @@ def screen(
         content=ft.Container(
             content=content_column,
             width=Sizes.CONTENT_MAX_WIDTH,
-            padding=ft.padding.symmetric(
+            padding=ft.Padding.symmetric(
                 horizontal=Sizes.PAGE_PADDING if padding is None else padding,
             ),
             expand=True,
         ),
-        alignment=ft.alignment.top_center,
+        alignment=ft.Alignment.TOP_CENTER,
         gradient=page_gradient(),
         expand=True,
     )
-
 
 def full_width(control: ft.Control) -> ft.Row:
     control.expand = True
     return ft.Row(controls=[control])
 
-
 def vspace(height: int) -> ft.Container:
     return ft.Container(height=height)
-
 
 def bottom_nav(page: ft.Page, selected: int = 3, on_change=None) -> ft.NavigationBar:
     DESTINATIONS = {1: "/search", 3: "/profile"}
 
-    def handle_change(e: ft.ControlEvent) -> None:
+    async def handle_change(e: ft.ControlEvent) -> None:
         index = e.control.selected_index
 
         if index == selected:
@@ -55,7 +58,7 @@ def bottom_nav(page: ft.Page, selected: int = 3, on_change=None) -> ft.Navigatio
 
         target = DESTINATIONS.get(index)
         if target is not None:
-            page.go(target)
+            await page.push_route(target)
             return
 
         e.control.selected_index = selected

@@ -16,20 +16,27 @@ from style.theme import Colors, Sizes, TextSizes
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
 
-
-def view(page: ft.Page, state: AppState, next_route: str = "/profile") -> ft.View:
+async def view(page: ft.Page, state: AppState, next_route: str = "/profile") -> ft.View:
     pending: dict[str, object] = {"path": None, "name": None}
 
     avatar_holder = ft.Container(
         content=avatar_view(state.avatar_url, Sizes.AVATAR_LARGE + 70),
-        alignment=ft.alignment.center,
+        alignment=ft.Alignment.CENTER,
     )
 
-    def on_file_selected(e: ft.FilePickerResultEvent) -> None:
-        if not e.files:
+    file_picker = ft.FilePicker()
+
+    async def open_file_picker(e: ft.ControlEvent) -> None:
+        archivos = await file_picker.pick_files(
+            dialog_title="Elige tu foto de perfil",
+            file_type=ft.FilePickerFileType.IMAGE,
+            allow_multiple=False,
+        )
+
+        if not archivos:
             return
 
-        selected = e.files[0]
+        selected = archivos[0]
 
         if not selected.path:
             show_error(
@@ -51,28 +58,15 @@ def view(page: ft.Page, state: AppState, next_route: str = "/profile") -> ft.Vie
             height=Sizes.AVATAR_LARGE + 70,
             border_radius=(Sizes.AVATAR_LARGE + 70) / 2,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            content=ft.Image(src=selected.path, fit=ft.ImageFit.COVER),
+            content=ft.Image(src=selected.path, fit=ft.BoxFit.COVER),
         )
         avatar_holder.update()
 
-    file_picker = ft.FilePicker(on_result=on_file_selected)
-
-    if file_picker not in page.overlay:
-        page.overlay.append(file_picker)
-        page.update()
-
-    def open_file_picker(e: ft.ControlEvent) -> None:
-        file_picker.pick_files(
-            dialog_title="Elige tu foto de perfil",
-            file_type=ft.FilePickerFileType.IMAGE,
-            allow_multiple=False,
-        )
-
-    def do_save(e: ft.ControlEvent | None = None) -> None:
+    async def do_save(e: ft.ControlEvent | None = None) -> None:
         path = pending["path"]
 
         if not path:
-            page.go(next_route)
+            await page.push_route(next_route)
             return
 
         set_loading(True)
@@ -83,7 +77,7 @@ def view(page: ft.Page, state: AppState, next_route: str = "/profile") -> ft.Vie
 
             mime, _ = mimetypes.guess_type(file_path.name)
 
-            result = user_service.upload_avatar(
+            result = await user_service.upload_avatar(
                 filename=file_path.name,
                 content=content,
                 mime=mime or "image/png",
@@ -93,7 +87,7 @@ def view(page: ft.Page, state: AppState, next_route: str = "/profile") -> ft.Vie
                 state.user["avatar_url"] = result["avatar_url"]
 
             show_success(page, "Foto de perfil actualizada")
-            page.go(next_route)
+            await page.push_route(next_route)
 
         except FileNotFoundError:
             show_error(page, "No se encontro el archivo, vuelve a elegirlo")
@@ -102,8 +96,8 @@ def view(page: ft.Page, state: AppState, next_route: str = "/profile") -> ft.Vie
         finally:
             set_loading(False)
 
-    def do_skip(e: ft.ControlEvent) -> None:
-        page.go(next_route)
+    async def do_skip(e: ft.ControlEvent) -> None:
+        await page.push_route(next_route)
 
     done_button, set_loading = loading_button("Listo", do_save)
 
@@ -138,7 +132,7 @@ def view(page: ft.Page, state: AppState, next_route: str = "/profile") -> ft.Vie
                                     height=58,
                                     bgcolor="#C4C4C4",
                                     border_radius=29,
-                                    alignment=ft.alignment.center,
+                                    alignment=ft.Alignment.CENTER,
                                     on_click=open_file_picker,
                                     ink=True,
                                     right=0,

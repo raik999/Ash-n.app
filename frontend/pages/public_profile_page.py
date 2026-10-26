@@ -11,24 +11,23 @@ from services import user_service
 from services.api_client import ApiError, api
 from style.theme import Colors, Fonts, Sizes, TextSizes
 
-
-def view(page: ft.Page, state: AppState, username: str) -> ft.View:
+async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
     if not state.user:
-        page.go("/login")
+        await page.push_route("/login")
         return ft.View(route=f"/user/{username}", controls=[])
 
-    def go_back(e: ft.ControlEvent) -> None:
-        page.go("/search")
+    async def go_back(e: ft.ControlEvent) -> None:
+        await page.push_route("/search")
 
     if username == (state.user or {}).get("username"):
-        page.go("/profile")
+        await page.push_route("/profile")
         return ft.View(route=f"/user/{username}", controls=[])
 
     profile: dict[str, Any] | None = None
     error_message: str | None = None
 
     try:
-        profile = user_service.get_public_profile(username)
+        profile = await user_service.get_public_profile(username)
     except ApiError as error:
         error_message = error.message
 
@@ -43,7 +42,7 @@ def view(page: ft.Page, state: AppState, username: str) -> ft.View:
                     expand=True,
                     controls=[
                         ft.Container(
-                            padding=ft.padding.only(left=6, top=10),
+                            padding=ft.Padding.only(left=6, top=10),
                             content=ft.IconButton(
                                 icon=ft.Icons.ARROW_BACK_IOS_NEW,
                                 icon_size=20,
@@ -53,7 +52,7 @@ def view(page: ft.Page, state: AppState, username: str) -> ft.View:
                         ),
                         ft.Container(
                             expand=True,
-                            alignment=ft.alignment.center,
+                            alignment=ft.Alignment.CENTER,
                             content=ft.Text(
                                 error_message or "No se pudo cargar el perfil",
                                 size=TextSizes.BODY,
@@ -72,8 +71,8 @@ def view(page: ft.Page, state: AppState, username: str) -> ft.View:
             controls=[
                 ft.Container(
                     content=avatar_view(api.absolute_url(profile.get("avatar_url")), 150),
-                    alignment=ft.alignment.center,
-                    padding=ft.padding.only(top=20),
+                    alignment=ft.Alignment.CENTER,
+                    padding=ft.Padding.only(top=20),
                     width=10000,
                     height=210,
                 ),
@@ -97,7 +96,7 @@ def view(page: ft.Page, state: AppState, username: str) -> ft.View:
                         width=78,
                         height=38,
                         border_radius=19,
-                        alignment=ft.alignment.center,
+                        alignment=ft.Alignment.CENTER,
                         on_click=None,
                         tooltip="Seguir (proximamente)",
                     ),
@@ -118,26 +117,41 @@ def view(page: ft.Page, state: AppState, username: str) -> ft.View:
 
     def empty_tab(message: str) -> ft.Container:
         return ft.Container(
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
             padding=40,
             content=ft.Text(message, size=TextSizes.BODY, color=Colors.TEXT_MUTED),
         )
 
     tabs = ft.Tabs(
         selected_index=0,
-        label_color=Colors.TEXT_PRIMARY,
-        unselected_label_color=Colors.TEXT_MUTED,
-        indicator_color=Colors.BRAND_DARK,
-        indicator_thickness=3,
-        divider_color=ft.Colors.TRANSPARENT,
-        tabs=[
-            ft.Tab(
-                text="Publicaciones",
-                content=empty_tab(f"@{profile['username']} todavia no tiene publicaciones"),
-            ),
-            ft.Tab(text="Portafolios", content=empty_tab("Todavia no tiene portafolios")),
-        ],
+        length=2,
         expand=True,
+        content=ft.Column(
+            spacing=0,
+            expand=True,
+            controls=[
+                ft.TabBar(
+                    tabs=[
+                        ft.Tab(label="Publicaciones"),
+                        ft.Tab(label="Portafolios"),
+                    ],
+                    label_color=Colors.TEXT_PRIMARY,
+                    unselected_label_color=Colors.TEXT_MUTED,
+                    indicator_color=Colors.BRAND_DARK,
+                    indicator_thickness=3,
+                    divider_color=ft.Colors.TRANSPARENT,
+                ),
+                ft.TabBarView(
+                    expand=True,
+                    controls=[
+                        empty_tab(
+                            f"@{profile['username']} todavia no tiene publicaciones"
+                        ),
+                        empty_tab("Todavia no tiene portafolios"),
+                    ],
+                ),
+            ],
+        ),
     )
 
     bio = profile.get("bio")
@@ -155,7 +169,7 @@ def view(page: ft.Page, state: AppState, username: str) -> ft.View:
                 controls=[
                     header,
                     ft.Container(
-                        padding=ft.padding.symmetric(horizontal=Sizes.PAGE_PADDING, vertical=14),
+                        padding=ft.Padding.symmetric(horizontal=Sizes.PAGE_PADDING, vertical=14),
                         content=ft.Column(
                             spacing=10,
                             controls=[
@@ -183,7 +197,7 @@ def view(page: ft.Page, state: AppState, username: str) -> ft.View:
                     ft.Container(
                         content=tabs,
                         expand=True,
-                        padding=ft.padding.symmetric(horizontal=8),
+                        padding=ft.Padding.symmetric(horizontal=8),
                     ),
                 ],
             )

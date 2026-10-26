@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import flet as ft
 
+from components.layout import safe_update
 from style.theme import Colors, Sizes, TextSizes
 
-
-def primary_button(text: str, on_click, *, width: int | None = None) -> ft.ElevatedButton:
-    return ft.ElevatedButton(
+def primary_button(text: str, on_click, *, width: int | None = None) -> ft.Button:
+    return ft.Button(
         content=ft.Text(
             text,
             size=TextSizes.SUBTITLE,
@@ -24,10 +24,9 @@ def primary_button(text: str, on_click, *, width: int | None = None) -> ft.Eleva
             color=Colors.TEXT_ON_DARK,
             shape=ft.RoundedRectangleBorder(radius=Sizes.BUTTON_RADIUS),
             elevation=0,
-            padding=ft.padding.symmetric(horizontal=20),
+            padding=ft.Padding.symmetric(horizontal=20),
         ),
     )
-
 
 def link_button(text: str, on_click, *, bold: bool = True, size: int | None = None) -> ft.TextButton:
     return ft.TextButton(
@@ -41,12 +40,11 @@ def link_button(text: str, on_click, *, bold: bool = True, size: int | None = No
         on_click=on_click,
         style=ft.ButtonStyle(
             overlay_color=ft.Colors.TRANSPARENT,
-            padding=ft.padding.symmetric(horizontal=4, vertical=2),
+            padding=ft.Padding.symmetric(horizontal=4, vertical=2),
         ),
     )
 
-
-def loading_button(text: str, on_click) -> tuple[ft.ElevatedButton, callable]:
+def loading_button(text: str, on_click) -> tuple[ft.Button, callable]:
     label = ft.Text(
         text,
         size=TextSizes.SUBTITLE,
@@ -62,7 +60,7 @@ def loading_button(text: str, on_click) -> tuple[ft.ElevatedButton, callable]:
         visible=False,
     )
 
-    button = ft.ElevatedButton(
+    button = ft.Button(
         content=ft.Row(
             controls=[spinner, label],
             alignment=ft.MainAxisAlignment.CENTER,
@@ -85,7 +83,6 @@ def loading_button(text: str, on_click) -> tuple[ft.ElevatedButton, callable]:
     def set_loading(is_loading: bool) -> None:
         spinner.visible = is_loading
         button.disabled = is_loading
-        if button.page:
-            button.update()
+        safe_update(button)
 
     return button, set_loading

@@ -13,7 +13,6 @@ from services import user_service
 from services.api_client import ApiError
 from style.theme import Colors, TextSizes
 
-
 def _date_part_field(hint: str, width: int, max_length: int) -> ft.TextField:
     return ft.TextField(
         hint_text=hint,
@@ -23,19 +22,18 @@ def _date_part_field(hint: str, width: int, max_length: int) -> ft.TextField:
         input_filter=ft.NumbersOnlyInputFilter(),
         text_align=ft.TextAlign.CENTER,
         text_size=30,
-        border=ft.InputBorder.UNDERLINE,
         filled=False,
-        border_color=Colors.TEXT_PRIMARY,
-        focused_border_color=Colors.TEXT_PRIMARY,
+        border=ft.UnderlineInputBorder(
+            side=ft.BorderSide(width=1, color=Colors.TEXT_PRIMARY)
+        ),
         cursor_color=Colors.TEXT_PRIMARY,
         text_style=ft.TextStyle(color=Colors.TEXT_PRIMARY, size=30),
         hint_style=ft.TextStyle(color=Colors.TEXT_MUTED, size=30),
-        counter_text="",
-        content_padding=ft.padding.only(bottom=4),
+        counter="",
+        content_padding=ft.Padding.only(bottom=4),
     )
 
-
-def view(page: ft.Page, state: AppState) -> ft.View:
+async def view(page: ft.Page, state: AppState) -> ft.View:
     day_field = _date_part_field("DD", 76, 2)
     month_field = _date_part_field("MM", 76, 2)
     year_field = _date_part_field("AAAA", 116, 4)
@@ -48,13 +46,13 @@ def view(page: ft.Page, state: AppState) -> ft.View:
         if len(parts) == 3:
             year_field.value, month_field.value, day_field.value = parts
 
-    def do_save(e: ft.ControlEvent | None = None) -> None:
+    async def do_save(e: ft.ControlEvent | None = None) -> None:
         day = (day_field.value or "").strip()
         month = (month_field.value or "").strip()
         year = (year_field.value or "").strip()
 
         if not any([day, month, year]):
-            page.go("/onboarding/tags")
+            await page.push_route("/onboarding/tags")
             return
 
         if not all([day, month, year]):
@@ -69,9 +67,9 @@ def view(page: ft.Page, state: AppState) -> ft.View:
 
         set_loading(True)
         try:
-            updated_user = user_service.update_profile(birthdate=birthdate)
+            updated_user = await user_service.update_profile(birthdate=birthdate)
             state.set_user(updated_user)
-            page.go("/onboarding/tags")
+            await page.push_route("/onboarding/tags")
         except ApiError as error:
             show_error(page, error.message)
         finally:

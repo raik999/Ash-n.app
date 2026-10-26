@@ -7,7 +7,6 @@ from style.theme import Colors, TextSizes
 
 ICON_BG = "#E6E6E6"
 
-
 def settings_row(
     icon: str,
     label: str | ft.Control,
@@ -45,7 +44,7 @@ def settings_row(
             height=38,
             bgcolor=circle_bg,
             border_radius=19,
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
         ),
         ft.Container(
             expand=True,
@@ -62,19 +61,17 @@ def settings_row(
 
     return ft.Container(
         content=ft.Row(controls=controls, spacing=14, vertical_alignment=ft.CrossAxisAlignment.CENTER),
-        padding=ft.padding.symmetric(horizontal=4, vertical=10),
+        padding=ft.Padding.symmetric(horizontal=4, vertical=10),
         on_click=on_click,
         ink=on_click is not None,
         border_radius=8,
     )
 
-
 def section_title(text: str) -> ft.Container:
     return ft.Container(
         content=ft.Text(text, size=TextSizes.SUBTITLE, color=Colors.TEXT_PRIMARY),
-        padding=ft.padding.only(top=18, bottom=6, left=4),
+        padding=ft.Padding.only(top=18, bottom=6, left=4),
     )
-
 
 def screen_header(title: str, on_back: Callable) -> ft.Container:
     return ft.Container(
@@ -106,5 +103,5 @@ def screen_header(title: str, on_back: Callable) -> ft.Container:
                 ft.Divider(height=1, thickness=1, color="#E4E4E4"),
             ],
         ),
-        padding=ft.padding.only(top=6),
+        padding=ft.Padding.only(top=6),
     )

@@ -13,19 +13,18 @@ from style.theme import Colors, Fonts, Sizes, TextSizes
 
 BIO_PLACEHOLDER = "Agrega una presentacion para que otros artistas sepan quien eres."
 
-
-def view(page: ft.Page, state: AppState) -> ft.View:
+async def view(page: ft.Page, state: AppState) -> ft.View:
     if not state.user:
-        page.go("/login")
+        await page.push_route("/login")
         return ft.View(route="/profile", controls=[])
 
     user = state.user
 
-    def go_to_settings(e: ft.ControlEvent) -> None:
-        page.go("/settings")
+    async def go_to_settings(e: ft.ControlEvent) -> None:
+        await page.push_route("/settings")
 
-    def go_to_tags(e: ft.ControlEvent) -> None:
-        page.go("/profile/tags")
+    async def go_to_tags(e: ft.ControlEvent) -> None:
+        await page.push_route("/profile/tags")
 
     header = ft.Container(
         bgcolor=Colors.PEACH_SOFT,
@@ -34,8 +33,8 @@ def view(page: ft.Page, state: AppState) -> ft.View:
             controls=[
                 ft.Container(
                     content=avatar_view(state.avatar_url, 150),
-                    alignment=ft.alignment.center,
-                    padding=ft.padding.only(top=20),
+                    alignment=ft.Alignment.CENTER,
+                    padding=ft.Padding.only(top=20),
                     width=10000,
                     height=210,
                 ),
@@ -67,7 +66,7 @@ def view(page: ft.Page, state: AppState) -> ft.View:
         ft.Container(
             content=ft.Icon(ft.Icons.ADD, size=20, color=Colors.BRAND_DARK),
             bgcolor="#A8A8A8",
-            padding=ft.padding.symmetric(horizontal=18, vertical=6),
+            padding=ft.Padding.symmetric(horizontal=18, vertical=6),
             border_radius=20,
             on_click=go_to_tags,
             ink=True,
@@ -86,19 +85,19 @@ def view(page: ft.Page, state: AppState) -> ft.View:
     )
 
     def close_dialog(e: ft.ControlEvent | None = None) -> None:
-        page.close(edit_dialog)
+        page.pop_dialog()
 
-    def save_profile(e: ft.ControlEvent) -> None:
+    async def save_profile(e: ft.ControlEvent) -> None:
         new_bio = (bio_field.value or "").strip()
-        bio_field.error_text = None
+        bio_field.error = None
 
         if len(new_bio) > 500:
-            bio_field.error_text = "Maximo 500 caracteres"
+            bio_field.error = "Maximo 500 caracteres"
             bio_field.update()
             return
 
         try:
-            updated_user = user_service.update_profile(
+            updated_user = await user_service.update_profile(
                 bio=new_bio,
                 include_bio=True,
             )
@@ -134,13 +133,13 @@ def view(page: ft.Page, state: AppState) -> ft.View:
 
     def open_edit_dialog(e: ft.ControlEvent) -> None:
         bio_field.value = (state.user or {}).get("bio") or ""
-        bio_field.error_text = None
-        page.open(edit_dialog)
+        bio_field.error = None
+        page.show_dialog(edit_dialog)
 
     def new_post_tile() -> ft.Container:
         return ft.Container(
             bgcolor="#8A8A8A",
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
             content=ft.Icon(ft.Icons.ADD, size=46, color=Colors.BRAND_DARK),
             on_click=None,
             ink=True,
@@ -161,23 +160,39 @@ def view(page: ft.Page, state: AppState) -> ft.View:
 
     def empty_tab(message: str) -> ft.Container:
         return ft.Container(
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
             padding=40,
             content=ft.Text(message, size=TextSizes.BODY, color=Colors.TEXT_MUTED),
         )
 
     tabs = ft.Tabs(
         selected_index=0,
-        label_color=Colors.TEXT_PRIMARY,
-        unselected_label_color=Colors.TEXT_MUTED,
-        indicator_color=Colors.BRAND_DARK,
-        indicator_thickness=3,
-        divider_color=ft.Colors.TRANSPARENT,
-        tabs=[
-            ft.Tab(text="Publicaciones", content=posts_grid()),
-            ft.Tab(text="Portafolios", content=empty_tab("Todavia no tienes portafolios")),
-        ],
+        length=2,
         expand=True,
+        content=ft.Column(
+            spacing=0,
+            expand=True,
+            controls=[
+                ft.TabBar(
+                    tabs=[
+                        ft.Tab(label="Publicaciones"),
+                        ft.Tab(label="Portafolios"),
+                    ],
+                    label_color=Colors.TEXT_PRIMARY,
+                    unselected_label_color=Colors.TEXT_MUTED,
+                    indicator_color=Colors.BRAND_DARK,
+                    indicator_thickness=3,
+                    divider_color=ft.Colors.TRANSPARENT,
+                ),
+                ft.TabBarView(
+                    expand=True,
+                    controls=[
+                        posts_grid(),
+                        empty_tab("Todavia no tienes portafolios"),
+                    ],
+                ),
+            ],
+        ),
     )
 
     return ft.View(
@@ -192,7 +207,7 @@ def view(page: ft.Page, state: AppState) -> ft.View:
                 controls=[
                     header,
                     ft.Container(
-                        padding=ft.padding.symmetric(horizontal=Sizes.PAGE_PADDING, vertical=14),
+                        padding=ft.Padding.symmetric(horizontal=Sizes.PAGE_PADDING, vertical=14),
                         content=ft.Column(
                             spacing=10,
                             controls=[
@@ -228,7 +243,7 @@ def view(page: ft.Page, state: AppState) -> ft.View:
                     ft.Container(
                         content=tabs,
                         expand=True,
-                        padding=ft.padding.symmetric(horizontal=8),
+                        padding=ft.Padding.symmetric(horizontal=8),
                     ),
                 ],
             )

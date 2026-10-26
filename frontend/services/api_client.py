@@ -9,14 +9,12 @@ API_BASE_URL = os.getenv("ASHUN_API_URL", "http://localhost:8000")
 
 REQUEST_TIMEOUT = 20.0
 
-
 class ApiError(Exception):
     def __init__(self, message: str, *, field: str | None = None, status: int = 0):
         super().__init__(message)
         self.message = message
         self.field = field
         self.status = status
-
 
 class ApiClient:
     def __init__(self, base_url: str = API_BASE_URL):
@@ -38,7 +36,7 @@ class ApiClient:
             headers.update(extra)
         return headers
 
-    def request(
+    async def request(
         self,
         method: str,
         path: str,
@@ -49,8 +47,8 @@ class ApiClient:
         url = f"{self.base_url}{path}"
 
         try:
-            with httpx.Client(timeout=REQUEST_TIMEOUT) as client:
-                response = client.request(
+            async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
+                response = await client.request(
                     method,
                     url,
                     json=json,
@@ -91,20 +89,22 @@ class ApiClient:
 
         raise ApiError(message, field=field, status=response.status_code)
 
-    def get(self, path: str) -> Any:
-        return self.request("GET", path)
+    async def get(self, path: str) -> Any:
+        return await self.request("GET", path)
 
-    def post(self, path: str, json: dict[str, Any] | None = None) -> Any:
-        return self.request("POST", path, json=json)
+    async def post(self, path: str, json: dict[str, Any] | None = None) -> Any:
+        return await self.request("POST", path, json=json)
 
-    def patch(self, path: str, json: dict[str, Any] | None = None) -> Any:
-        return self.request("PATCH", path, json=json)
+    async def patch(self, path: str, json: dict[str, Any] | None = None) -> Any:
+        return await self.request("PATCH", path, json=json)
 
-    def delete(self, path: str, json: dict[str, Any] | None = None) -> Any:
-        return self.request("DELETE", path, json=json)
+    async def delete(self, path: str, json: dict[str, Any] | None = None) -> Any:
+        return await self.request("DELETE", path, json=json)
 
-    def upload(self, path: str, field_name: str, filename: str, content: bytes, mime: str) -> Any:
-        return self.request(
+    async def upload(
+        self, path: str, field_name: str, filename: str, content: bytes, mime: str
+    ) -> Any:
+        return await self.request(
             "POST",
             path,
             files={field_name: (filename, content, mime)},
@@ -116,6 +116,5 @@ class ApiClient:
         if path.startswith("http://") or path.startswith("https://"):
             return path
         return f"{self.base_url}{path}"
-
 
 api = ApiClient()

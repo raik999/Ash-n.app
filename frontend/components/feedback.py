@@ -4,9 +4,8 @@ import flet as ft
 
 from style.theme import Colors, Sizes, TextSizes
 
-
 def show_error(page: ft.Page, message: str) -> None:
-    page.open(
+    page.show_dialog(
         ft.SnackBar(
             content=ft.Text(message, color=Colors.TEXT_ON_DARK, size=TextSizes.BODY),
             bgcolor=Colors.ERROR,
@@ -14,16 +13,14 @@ def show_error(page: ft.Page, message: str) -> None:
         )
     )
 
-
 def show_success(page: ft.Page, message: str) -> None:
-    page.open(
+    page.show_dialog(
         ft.SnackBar(
             content=ft.Text(message, color=Colors.TEXT_ON_DARK, size=TextSizes.BODY),
             bgcolor=Colors.SUCCESS,
             duration=2500,
         )
     )
-
 
 def confirm_dialog(
     page: ft.Page,
@@ -37,10 +34,10 @@ def confirm_dialog(
     extra: ft.Control | None = None,
 ) -> ft.AlertDialog:
     def close(e=None) -> None:
-        page.close(dialog)
+        page.pop_dialog()
 
-    def handle_confirm(e) -> None:
-        on_confirm(close)
+    async def handle_confirm(e) -> None:
+        await on_confirm(close)
 
     content_controls: list[ft.Control] = [
         ft.Text(message, size=TextSizes.BODY, color=Colors.TEXT_BODY)
@@ -70,9 +67,8 @@ def confirm_dialog(
         actions_alignment=ft.MainAxisAlignment.END,
     )
 
-    page.open(dialog)
+    page.show_dialog(dialog)
     return dialog
-
 
 def default_avatar(size: int = Sizes.AVATAR_LARGE) -> ft.Container:
     head_size = size * 0.42
@@ -99,7 +95,7 @@ def default_avatar(size: int = Sizes.AVATAR_LARGE) -> ft.Container:
                     width=body_width,
                     height=body_height,
                     bgcolor=Colors.PLACEHOLDER,
-                    border_radius=ft.border_radius.only(
+                    border_radius=ft.BorderRadius.only(
                         top_left=body_width / 2,
                         top_right=body_width / 2,
                     ),
@@ -109,7 +105,6 @@ def default_avatar(size: int = Sizes.AVATAR_LARGE) -> ft.Container:
             ]
         ),
     )
-
 
 def avatar_view(url: str | None, size: int = Sizes.AVATAR_LARGE) -> ft.Control:
     if not url:
@@ -124,7 +119,7 @@ def avatar_view(url: str | None, size: int = Sizes.AVATAR_LARGE) -> ft.Control:
             src=url,
             width=size,
             height=size,
-            fit=ft.ImageFit.COVER,
+            fit=ft.BoxFit.COVER,
             error_content=default_avatar(size),
         ),
     )

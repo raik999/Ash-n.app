@@ -3,7 +3,7 @@ from datetime import date
 from typing import Any
 from services.api_client import api
 
-def update_profile(
+async def update_profile(
     *,
     name: str | None = None,
     username: str | None = None,
@@ -35,18 +35,18 @@ def update_profile(
     if tag_ids is not None:
         payload["tag_ids"] = tag_ids
 
-    return api.patch("/api/users/me", payload)
+    return await api.patch("/api/users/me", payload)
 
-def upload_avatar(filename: str, content: bytes, mime: str) -> dict[str, Any]:
-    return api.upload("/api/users/me/avatar", "file", filename, content, mime)
+async def upload_avatar(filename: str, content: bytes, mime: str) -> dict[str, Any]:
+    return await api.upload("/api/users/me/avatar", "file", filename, content, mime)
 
-def delete_avatar() -> dict[str, Any]:
-    return api.delete("/api/users/me/avatar")
+async def delete_avatar() -> dict[str, Any]:
+    return await api.delete("/api/users/me/avatar")
 
-def change_password(
+async def change_password(
     current_password: str, new_password: str, confirm_password: str
 ) -> dict[str, Any]:
-    return api.patch(
+    return await api.patch(
         "/api/users/me/password",
         {
             "current_password": current_password,
@@ -55,8 +55,8 @@ def change_password(
         },
     )
 
-def delete_account(password: str) -> dict[str, Any]:
-    return api.delete("/api/users/me", {"password": password})
+async def delete_account(password: str) -> dict[str, Any]:
+    return await api.delete("/api/users/me", {"password": password})
 
-def get_public_profile(username: str) -> dict[str, Any]:
-    return api.get(f"/api/users/{username}")
+async def get_public_profile(username: str) -> dict[str, Any]:
+    return await api.get(f"/api/users/{username}")

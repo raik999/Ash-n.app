@@ -6,15 +6,14 @@ import flet as ft
 from components.brand_header import brand_header, screen_title
 from components.buttons import link_button, loading_button
 from components.feedback import show_error
-from components.layout import full_width, screen, vspace
+from components.layout import full_width, safe_update, screen, vspace
 from components.tag_chip import removable_chip, selectable_chip
 from context.app_state import AppState
 from services import user_service
 from services.api_client import ApiError
 from style.theme import Colors, Fonts, TextSizes
 
-
-def view(page: ft.Page, state: AppState, next_route: str = "/onboarding/avatar") -> ft.View:
+async def view(page: ft.Page, state: AppState, next_route: str = "/onboarding/avatar") -> ft.View:
     selected_ids: list[int] = list(state.user_tag_ids)
 
     available_wrap = ft.Row(wrap=True, spacing=10, run_spacing=10)
@@ -44,9 +43,7 @@ def view(page: ft.Page, state: AppState, next_route: str = "/onboarding/avatar")
                 )
             )
 
-        if available_wrap.page:
-            available_wrap.update()
-            selected_wrap.update()
+        safe_update(available_wrap, selected_wrap)
 
     def toggle_tag(tag: dict[str, Any]) -> None:
         tag_id = tag["id"]
@@ -66,24 +63,24 @@ def view(page: ft.Page, state: AppState, next_route: str = "/onboarding/avatar")
             selected_ids.remove(tag["id"])
             refresh_chips()
 
-    def do_save(e: ft.ControlEvent | None = None) -> None:
+    async def do_save(e: ft.ControlEvent | None = None) -> None:
         set_loading(True)
         try:
-            updated_user = user_service.update_profile(tag_ids=selected_ids)
+            updated_user = await user_service.update_profile(tag_ids=selected_ids)
             state.set_user(updated_user)
-            page.go(next_route)
+            await page.push_route(next_route)
         except ApiError as error:
             show_error(page, error.message)
         finally:
             set_loading(False)
 
-    def do_skip(e: ft.ControlEvent) -> None:
-        page.go(next_route)
+    async def do_skip(e: ft.ControlEvent) -> None:
+        await page.push_route(next_route)
 
     done_button, set_loading = loading_button("Listo", do_save)
 
     try:
-        state.load_tags()
+        await state.load_tags()
     except ApiError as error:
         show_error(page, error.message)
 
@@ -125,7 +122,6 @@ def view(page: ft.Page, state: AppState, next_route: str = "/onboarding/avatar")
             )
         ],
     )
-
 
 def _find_tag(tags: list[dict[str, Any]], tag_id: int) -> dict[str, Any] | None:
     return next((tag for tag in tags if tag["id"] == tag_id), None)

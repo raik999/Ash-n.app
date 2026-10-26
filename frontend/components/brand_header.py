@@ -2,7 +2,6 @@ import flet as ft
 
 from style.theme import Colors, Fonts, TextSizes
 
-
 def brand_header(
     *,
     size: int = TextSizes.HEADING,
@@ -25,11 +24,10 @@ def brand_header(
                 src="logo.png",
                 width=logo_size,
                 height=logo_size,
-                fit=ft.ImageFit.CONTAIN,
+                fit=ft.BoxFit.CONTAIN,
             ),
         ],
     )
-
 
 def screen_title(text: str, subtitle: str | None = None) -> ft.Column:
     controls: list[ft.Control] = [

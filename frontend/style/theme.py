@@ -1,6 +1,5 @@
 import flet as ft
 
-
 class Colors:
     BRAND_RED = "#E63946"
     BRAND_DARK = "#1A1A1A"
@@ -22,11 +21,9 @@ class Colors:
 
     CHIP_FALLBACK = "#7C7C7C"
 
-
 class Fonts:
     HEADING = "Poppins"
     BODY = "Poppins"
-
 
 class TextSizes:
     DISPLAY = 40
@@ -37,11 +34,10 @@ class TextSizes:
     LABEL = 14
     SMALL = 12
 
-
 def page_gradient() -> ft.LinearGradient:
     return ft.LinearGradient(
-        begin=ft.alignment.top_left,
-        end=ft.alignment.bottom_right,
+        begin=ft.Alignment.TOP_LEFT,
+        end=ft.Alignment.BOTTOM_RIGHT,
         colors=[
             Colors.PEACH,
             Colors.PEACH_SOFT,
@@ -52,7 +48,6 @@ def page_gradient() -> ft.LinearGradient:
         ],
         stops=[0.0, 0.08, 0.22, 0.78, 0.92, 1.0],
     )
-
 
 def app_theme() -> ft.Theme:
     return ft.Theme(
@@ -65,7 +60,6 @@ def app_theme() -> ft.Theme:
         ),
         font_family=Fonts.BODY,
     )
-
 
 class Sizes:
     CONTENT_MAX_WIDTH = 420

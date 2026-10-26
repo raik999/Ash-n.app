@@ -21,8 +21,7 @@ FONTS = {
     "Poppins": "https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Regular.ttf",
 }
 
-
-def main(page: ft.Page) -> None:
+async def main(page: ft.Page) -> None:
     page.title = "Ashün"
     page.theme = app_theme()
     page.theme_mode = ft.ThemeMode.LIGHT
@@ -36,8 +35,9 @@ def main(page: ft.Page) -> None:
     page.window.min_height = 640
 
     state = AppState(page)
+    await state.start()
 
-    def route_change(e: ft.RouteChangeEvent) -> None:
+    async def route_change(e: ft.RouteChangeEvent) -> None:
         route = page.route
 
         routes = {
@@ -59,30 +59,31 @@ def main(page: ft.Page) -> None:
 
         public_routes = {"/login", "/register"}
         if route not in public_routes and not state.is_authenticated:
-            page.go("/login")
+            await page.push_route("/login")
             return
 
         if route.startswith("/user/"):
             target_username = route.removeprefix("/user/")
             if target_username:
                 page.views.clear()
-                page.views.append(public_profile_page.view(page, state, target_username))
+                page.views.append(
+                    await public_profile_page.view(page, state, target_username)
+                )
                 page.update()
                 return
 
         builder = routes.get(route)
         if builder is None:
-            page.go("/login")
+            await page.push_route("/login")
             return
 
         page.views.clear()
-        page.views.append(builder())
+        page.views.append(await builder())
         page.update()
 
     def view_pop(e: ft.ViewPopEvent) -> None:
         if len(page.views) > 1:
             page.views.pop()
-            page.go(page.views[-1].route or "/login")
 
     page.on_route_change = route_change
     page.on_view_pop = view_pop
@@ -101,7 +102,7 @@ def main(page: ft.Page) -> None:
     )
     page.update()
 
-    if state.try_restore_session():
-        page.go("/profile")
+    if await state.try_restore_session():
+        await page.push_route("/profile")
     else:
-        page.go("/login")
+        await page.push_route("/login")

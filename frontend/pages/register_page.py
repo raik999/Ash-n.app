@@ -12,8 +12,7 @@ from services import auth_service
 from services.api_client import ApiError
 from style.theme import Colors, TextSizes
 
-
-def view(page: ft.Page, state: AppState) -> ft.View:
+async def view(page: ft.Page, state: AppState) -> ft.View:
     email_field = underline_field("Mail", keyboard_type=ft.KeyboardType.EMAIL)
     name_field = underline_field("Nombre completo")
     username_field = underline_field("Nombre de usuario")
@@ -35,7 +34,7 @@ def view(page: ft.Page, state: AppState) -> ft.View:
         "confirm_password": confirm_field,
     }
 
-    def do_register(e: ft.ControlEvent | None = None) -> None:
+    async def do_register(e: ft.ControlEvent | None = None) -> None:
         clear_errors(*all_fields)
 
         email = (email_field.value or "").strip()
@@ -65,7 +64,7 @@ def view(page: ft.Page, state: AppState) -> ft.View:
 
         set_loading(True)
         try:
-            data = auth_service.register(
+            data = await auth_service.register(
                 email=email,
                 name=name,
                 username=username,
@@ -73,9 +72,9 @@ def view(page: ft.Page, state: AppState) -> ft.View:
                 confirm_password=confirm,
             )
 
-            state.save_session(data["access_token"], data["user"])
+            await state.save_session(data["access_token"], data["user"])
 
-            page.go("/onboarding/birthdate")
+            await page.push_route("/onboarding/birthdate")
 
         except ApiError as error:
             target = field_map.get(error.field or "")
@@ -89,8 +88,8 @@ def view(page: ft.Page, state: AppState) -> ft.View:
     register_button, set_loading = loading_button("Iniciar Sesion", do_register)
     confirm_field.on_submit = do_register
 
-    def go_to_login(e: ft.ControlEvent) -> None:
-        page.go("/login")
+    async def go_to_login(e: ft.ControlEvent) -> None:
+        await page.push_route("/login")
 
     return ft.View(
         route="/register",

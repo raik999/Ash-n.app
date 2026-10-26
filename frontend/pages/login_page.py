@@ -12,8 +12,7 @@ from services import auth_service
 from services.api_client import ApiError
 from style.theme import Colors, TextSizes
 
-
-def view(page: ft.Page, state: AppState) -> ft.View:
+async def view(page: ft.Page, state: AppState) -> ft.View:
     identifier_field = underline_field("Nombre de Usuario o Mail")
     password_field = underline_field("Contraseña", password=True, can_reveal=True)
 
@@ -28,7 +27,7 @@ def view(page: ft.Page, state: AppState) -> ft.View:
         check_color=Colors.TEXT_ON_DARK,
     )
 
-    def do_login(e: ft.ControlEvent | None = None) -> None:
+    async def do_login(e: ft.ControlEvent | None = None) -> None:
         clear_errors(identifier_field, password_field)
 
         identifier = (identifier_field.value or "").strip()
@@ -43,17 +42,17 @@ def view(page: ft.Page, state: AppState) -> ft.View:
 
         set_loading(True)
         try:
-            data = auth_service.login(identifier, password)
+            data = await auth_service.login(identifier, password)
 
             if remember_checkbox.value:
-                state.save_session(data["access_token"], data["user"])
+                await state.save_session(data["access_token"], data["user"])
             else:
                 state.set_user(data["user"])
                 from services.api_client import api
 
                 api.set_token(data["access_token"])
 
-            page.go("/profile")
+            await page.push_route("/profile")
 
         except ApiError as error:
             if error.field == "identifier":
@@ -69,8 +68,8 @@ def view(page: ft.Page, state: AppState) -> ft.View:
 
     password_field.on_submit = do_login
 
-    def go_to_register(e: ft.ControlEvent) -> None:
-        page.go("/register")
+    async def go_to_register(e: ft.ControlEvent) -> None:
+        await page.push_route("/register")
 
     def forgot_password(e: ft.ControlEvent) -> None:
         show_error(page, "La recuperacion de contraseña aun no esta disponible")

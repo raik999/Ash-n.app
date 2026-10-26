@@ -2,11 +2,10 @@ from __future__ import annotations
 from typing import Any
 from services.api_client import api
 
-
-def register(
+async def register(
     email: str, name: str, username: str, password: str, confirm_password: str
 ) -> dict[str, Any]:
-    return api.post(
+    return await api.post(
         "/api/auth/register",
         {
             "email": email,
@@ -17,10 +16,8 @@ def register(
         },
     )
 
+async def login(identifier: str, password: str) -> dict[str, Any]:
+    return await api.post("/api/auth/login", {"identifier": identifier, "password": password})
 
-def login(identifier: str, password: str) -> dict[str, Any]:
-    return api.post("/api/auth/login", {"identifier": identifier, "password": password})
-
-
-def get_me() -> dict[str, Any]:
-    return api.get("/api/auth/me")
+async def get_me() -> dict[str, Any]:
+    return await api.get("/api/auth/me")

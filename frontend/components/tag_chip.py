@@ -6,7 +6,6 @@ import flet as ft
 
 from style.theme import Colors, TextSizes
 
-
 def _chip_label(name: str, size: int = TextSizes.LABEL) -> ft.Text:
     return ft.Text(
         f"#{name}",
@@ -14,7 +13,6 @@ def _chip_label(name: str, size: int = TextSizes.LABEL) -> ft.Text:
         color=Colors.TEXT_ON_DARK,
         weight=ft.FontWeight.W_500,
     )
-
 
 def selectable_chip(
     tag: dict[str, Any],
@@ -28,14 +26,13 @@ def selectable_chip(
         content=_chip_label(tag["name"]),
         bgcolor=color,
         opacity=0.45 if selected else 1.0,
-        padding=ft.padding.symmetric(horizontal=16, vertical=9),
+        padding=ft.Padding.symmetric(horizontal=16, vertical=9),
         border_radius=20,
         on_click=lambda e: on_toggle(tag),
         ink=True,
         tooltip=f"Tocar para {'quitar' if selected else 'agregar'}",
         animate_opacity=150,
     )
-
 
 def removable_chip(
     tag: dict[str, Any],
@@ -59,14 +56,14 @@ def removable_chip(
                     width=30,
                     height=30,
                     border_radius=20,
-                    alignment=ft.alignment.center,
+                    alignment=ft.Alignment.CENTER,
                 ),
                 ft.Container(
                     content=_chip_label(tag["name"]),
                     bgcolor=color,
-                    padding=ft.padding.symmetric(horizontal=14, vertical=7),
+                    padding=ft.Padding.symmetric(horizontal=14, vertical=7),
                     border_radius=20,
-                    margin=ft.margin.only(left=-15),
+                    margin=ft.Margin.only(left=-15),
                 ),
             ],
         ),
@@ -75,11 +72,10 @@ def removable_chip(
         tooltip="Quitar esta especialidad",
     )
 
-
 def display_chip(tag: dict[str, Any]) -> ft.Container:
     return ft.Container(
         content=_chip_label(tag["name"], size=TextSizes.SMALL + 1),
         bgcolor=tag.get("color") or Colors.CHIP_FALLBACK,
-        padding=ft.padding.symmetric(horizontal=14, vertical=7),
+        padding=ft.Padding.symmetric(horizontal=14, vertical=7),
         border_radius=20,
     )
