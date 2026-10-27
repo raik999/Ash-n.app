@@ -5,7 +5,7 @@ import flet as ft
 
 from components.feedback import avatar_view, show_error
 from components.layout import bottom_nav, safe_update
-from components.post_media import media_carousel
+from components.post_media import media_carousel, text_panel
 from components.tag_chip import display_chip
 from context.app_state import AppState
 from services import post_service
@@ -169,6 +169,8 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
 
     if archivos:
         cuerpo.append(media_carousel(archivos, alto=330))
+    elif descripcion:
+        cuerpo.append(text_panel(descripcion, alto=240))
 
     cuerpo.append(
         ft.Container(
@@ -194,16 +196,17 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
             )
         )
 
-    cuerpo.append(
-        ft.Container(
-            padding=ft.Padding.symmetric(horizontal=14, vertical=12),
-            content=ft.Text(
-                f"Descripcion: {descripcion}" if descripcion else "Sin descripcion",
-                size=TextSizes.BODY,
-                color=Colors.TEXT_BODY if descripcion else Colors.TEXT_MUTED,
-            ),
+    if descripcion and archivos:
+        cuerpo.append(
+            ft.Container(
+                padding=ft.Padding.symmetric(horizontal=14, vertical=12),
+                content=ft.Text(
+                    descripcion,
+                    size=TextSizes.BODY,
+                    color=Colors.TEXT_BODY,
+                ),
+            )
         )
-    )
 
     cuerpo.append(
         ft.Container(
