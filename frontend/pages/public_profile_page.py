@@ -1,13 +1,15 @@
 from __future__ import annotations
+from functools import partial
 from typing import Any
 
 import flet as ft
 
 from components.feedback import avatar_view
 from components.layout import bottom_nav
+from components.post_media import grid_cell
 from components.tag_chip import display_chip
 from context.app_state import AppState
-from services import user_service
+from services import post_service, user_service
 from services.api_client import ApiError, api
 from style.theme import Colors, Fonts, Sizes, TextSizes
 
@@ -115,6 +117,32 @@ async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
         controls=[display_chip(tag) for tag in user_tags],
     )
 
+    publicaciones: list[dict] = []
+    try:
+        publicaciones = await post_service.list_user_posts(username)
+    except ApiError:
+        publicaciones = []
+
+    async def abrir_publicacion(post_id: int) -> None:
+        await page.push_route(f"/post/{post_id}")
+
+    def posts_grid() -> ft.Control:
+        if not publicaciones:
+            return empty_tab(f"@{profile['username']} todavia no tiene publicaciones")
+
+        return ft.GridView(
+            controls=[
+                grid_cell(pub, partial(abrir_publicacion, pub["id"]))
+                for pub in publicaciones
+            ],
+            runs_count=3,
+            child_aspect_ratio=1.0,
+            spacing=6,
+            run_spacing=6,
+            padding=ft.Padding.all(6),
+            expand=True,
+        )
+
     def empty_tab(message: str) -> ft.Container:
         return ft.Container(
             alignment=ft.Alignment.CENTER,
@@ -144,9 +172,7 @@ async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
                 ft.TabBarView(
                     expand=True,
                     controls=[
-                        empty_tab(
-                            f"@{profile['username']} todavia no tiene publicaciones"
-                        ),
+                        posts_grid(),
                         empty_tab("Todavia no tiene portafolios"),
                     ],
                 ),
