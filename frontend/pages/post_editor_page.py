@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import mimetypes
-
 from pathlib import Path
 from typing import Any
 
@@ -93,6 +92,20 @@ async def view(
         datos["existentes"] = list(publicacion.get("files") or [])
         seleccionados.extend(t["id"] for t in (publicacion.get("tags") or []))
 
+    def boton_flotante(icono: str, ayuda: str, accion) -> ft.Container:
+        return ft.Container(
+            width=38,
+            height=38,
+            bgcolor=Colors.BRAND_DARK,
+            border=ft.Border.all(2, Colors.TEXT_ON_DARK),
+            border_radius=19,
+            alignment=ft.Alignment.CENTER,
+            on_click=accion,
+            ink=True,
+            tooltip=ayuda,
+            content=ft.Icon(icono, size=20, color=Colors.TEXT_ON_DARK),
+        )
+
     def archivos_visibles() -> list[dict[str, Any]]:
         vivos = [f for f in datos["existentes"] if f["id"] not in datos["a_borrar"]]
         return vivos + datos["nuevos"]
@@ -114,27 +127,17 @@ async def view(
                 controls=[
                     media_carousel(visibles, alto=260),
                     ft.Container(
-                        right=6,
-                        top=6,
-                        content=ft.IconButton(
-                            icon=ft.Icons.CLOSE,
-                            icon_size=18,
-                            icon_color=Colors.TEXT_ON_DARK,
-                            bgcolor="#000000AA",
-                            tooltip="Quitar el primero",
-                            on_click=quitar_primero,
+                        right=8,
+                        top=8,
+                        content=boton_flotante(
+                            ft.Icons.CLOSE, "Quitar el primer archivo", quitar_primero
                         ),
                     ),
                     ft.Container(
-                        right=6,
-                        bottom=6,
-                        content=ft.IconButton(
-                            icon=ft.Icons.ADD,
-                            icon_size=18,
-                            icon_color=Colors.TEXT_ON_DARK,
-                            bgcolor="#000000AA",
-                            tooltip="Agregar otro archivo",
-                            on_click=elegir_archivos,
+                        right=8,
+                        bottom=8,
+                        content=boton_flotante(
+                            ft.Icons.ADD, "Agregar otro archivo", elegir_archivos
                         ),
                     ),
                 ],
@@ -205,6 +208,7 @@ async def view(
                     "bytes": contenido,
                     "kind": kind_from_name(ruta_local.name),
                     "url": str(ruta_local),
+                    "local": True,
                 }
             )
 
@@ -306,13 +310,6 @@ async def view(
                     on_click=volver,
                 ),
                 ft.Container(expand=True),
-                ft.IconButton(
-                    icon=ft.Icons.CHECK,
-                    icon_size=26,
-                    icon_color=Colors.TEXT_PRIMARY,
-                    tooltip="Publicar",
-                    on_click=guardar,
-                ),
             ],
         ),
     )
