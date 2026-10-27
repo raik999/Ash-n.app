@@ -179,9 +179,36 @@ def audio_player(url: str) -> ft.Control:
         ),
     )
 
+def text_panel(texto: str | None, alto: int = 200) -> ft.Container:
+    return ft.Container(
+        bgcolor=Colors.PEACH_SOFT,
+        padding=ft.Padding.symmetric(horizontal=18, vertical=20),
+        alignment=ft.Alignment.CENTER,
+        height=alto,
+        content=ft.Column(
+            alignment=ft.MainAxisAlignment.CENTER,
+            scroll=ft.ScrollMode.AUTO,
+            tight=True,
+            controls=[
+                ft.Text(
+                    (texto or "").strip(),
+                    size=TextSizes.SUBTITLE,
+                    color=Colors.TEXT_BODY,
+                    text_align=ft.TextAlign.CENTER,
+                )
+            ],
+        ),
+    )
+
 def media_item(archivo: dict[str, Any]) -> ft.Control:
-    url = api.absolute_url(archivo["url"])
+    es_local = bool(archivo.get("local"))
+    url = archivo["url"] if es_local else api.absolute_url(archivo["url"])
     kind = archivo.get("kind")
+
+    if es_local and kind == KIND_VIDEO:
+        return _tarjeta(ft.Icons.PLAY_CIRCLE_OUTLINE, "Video listo para subir", "#2B2B2B", False)
+    if es_local and kind == KIND_AUDIO:
+        return _tarjeta(ft.Icons.MUSIC_NOTE, "Cancion lista para subir", "#5B3DA8", False)
 
     if kind == KIND_VIDEO:
         return fv.Video(
