@@ -1,13 +1,15 @@
 from __future__ import annotations
+from functools import partial
 
 import flet as ft
 
 from components.feedback import avatar_view, show_error, show_success
 from components.fields import underline_field
 from components.layout import bottom_nav
+from components.post_media import grid_cell, new_post_cell
 from components.tag_chip import display_chip
 from context.app_state import AppState
-from services import user_service
+from services import post_service, user_service
 from services.api_client import ApiError
 from style.theme import Colors, Fonts, Sizes, TextSizes
 
@@ -19,6 +21,12 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
         return ft.View(route="/profile", controls=[])
 
     user = state.user
+
+    publicaciones: list[dict] = []
+    try:
+        publicaciones = await post_service.list_user_posts(user["username"])
+    except ApiError as error:
+        show_error(page, error.message)
 
     async def go_to_settings(e: ft.ControlEvent) -> None:
         await page.push_route("/settings")
@@ -136,18 +144,19 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
         bio_field.error = None
         page.show_dialog(edit_dialog)
 
-    def new_post_tile() -> ft.Container:
-        return ft.Container(
-            bgcolor="#8A8A8A",
-            alignment=ft.Alignment.CENTER,
-            content=ft.Icon(ft.Icons.ADD, size=46, color=Colors.BRAND_DARK),
-            on_click=None,
-            ink=True,
-            tooltip="Publicar (proximamente)",
-        )
+    async def abrir_publicacion(post_id: int) -> None:
+        await page.push_route(f"/post/{post_id}")
+
+    async def crear_publicacion(e) -> None:
+        await page.push_route("/post/new")
 
     def posts_grid() -> ft.GridView:
-        tiles: list[ft.Control] = [new_post_tile()]
+        tiles: list[ft.Control] = [new_post_cell(crear_publicacion)]
+
+        for publicacion in publicaciones:
+            tiles.append(
+                grid_cell(publicacion, partial(abrir_publicacion, publicacion["id"]))
+            )
 
         return ft.GridView(
             controls=tiles,
