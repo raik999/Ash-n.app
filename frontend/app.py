@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import traceback
 import flet as ft
 
 from context.app_state import AppState
@@ -24,6 +25,35 @@ from style.theme import Colors, app_theme
 FONTS = {
     "Poppins": "https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Regular.ttf",
 }
+
+def _vista_de_error(route: str, error: Exception) -> ft.View:
+    detalle = traceback.format_exc()
+
+    return ft.View(
+        route=route,
+        padding=16,
+        bgcolor=Colors.BACKGROUND,
+        scroll=ft.ScrollMode.AUTO,
+        controls=[
+            ft.Text(
+                "Esta pantalla no se pudo abrir",
+                size=20,
+                weight=ft.FontWeight.BOLD,
+                color=Colors.BRAND_RED,
+            ),
+            ft.Container(height=6),
+            ft.Text(f"Ruta: {route}", size=13, color=Colors.TEXT_MUTED),
+            ft.Text(f"{type(error).__name__}: {error}", size=13, color=Colors.TEXT_BODY),
+            ft.Container(height=10),
+            ft.Text(
+                detalle,
+                size=10,
+                color=Colors.TEXT_MUTED,
+                selectable=True,
+                font_family="monospace",
+            ),
+        ],
+    )
 
 async def main(page: ft.Page) -> None:
     page.title = "Ashün"
@@ -78,14 +108,17 @@ async def main(page: ft.Page) -> None:
                 post_id = int(partes[1])
                 seccion = partes[2] if len(partes) > 2 else ""
 
-                if seccion == "comments":
-                    vista = await comments_page.view(page, state, post_id)
-                elif seccion == "settings":
-                    vista = await post_settings_page.view(page, state, post_id)
-                elif seccion == "edit":
-                    vista = await post_editor_page.view(page, state, post_id)
-                else:
-                    vista = await post_page.view(page, state, post_id)
+                try:
+                    if seccion == "comments":
+                        vista = await comments_page.view(page, state, post_id)
+                    elif seccion == "settings":
+                        vista = await post_settings_page.view(page, state, post_id)
+                    elif seccion == "edit":
+                        vista = await post_editor_page.view(page, state, post_id)
+                    else:
+                        vista = await post_page.view(page, state, post_id)
+                except Exception as error:
+                    vista = _vista_de_error(route, error)
 
                 page.views.clear()
                 page.views.append(vista)
@@ -95,10 +128,13 @@ async def main(page: ft.Page) -> None:
         if route.startswith("/user/"):
             target_username = route.removeprefix("/user/")
             if target_username:
+                try:
+                    vista = await public_profile_page.view(page, state, target_username)
+                except Exception as error:
+                    vista = _vista_de_error(route, error)
+
                 page.views.clear()
-                page.views.append(
-                    await public_profile_page.view(page, state, target_username)
-                )
+                page.views.append(vista)
                 page.update()
                 return
 
@@ -107,8 +143,13 @@ async def main(page: ft.Page) -> None:
             await page.push_route("/login")
             return
 
+        try:
+            vista = await builder()
+        except Exception as error:
+            vista = _vista_de_error(route, error)
+
         page.views.clear()
-        page.views.append(await builder())
+        page.views.append(vista)
         page.update()
 
     def view_pop(e: ft.ViewPopEvent) -> None:

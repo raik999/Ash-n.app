@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-API_URL = "http://localhost:8000"
+API_URL = "http://192.168.4.212:8000"
 
 API_URL_PRODUCCION = ""
 
