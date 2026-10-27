@@ -7,7 +7,11 @@ from pages import (
     account_page,
     avatar_page,
     birthdate_page,
+    comments_page,
     login_page,
+    post_editor_page,
+    post_page,
+    post_settings_page,
     profile_page,
     public_profile_page,
     register_page,
@@ -55,12 +59,38 @@ async def main(page: ft.Page) -> None:
                 page, state, "/settings/account"
             ),
             "/search": lambda: search_page.view(page, state),
+            "/post/new": lambda: post_editor_page.view(page, state),
         }
 
         public_routes = {"/login", "/register"}
-        if route not in public_routes and not state.is_authenticated:
+        es_publica = (
+            route in public_routes
+            or route.startswith("/user/")
+            or (route.startswith("/post/") and route != "/post/new")
+        )
+        if not es_publica and not state.is_authenticated:
             await page.push_route("/login")
             return
+
+        if route.startswith("/post/") and route != "/post/new":
+            partes = route.strip("/").split("/")
+            if len(partes) >= 2 and partes[1].isdigit():
+                post_id = int(partes[1])
+                seccion = partes[2] if len(partes) > 2 else ""
+
+                if seccion == "comments":
+                    vista = await comments_page.view(page, state, post_id)
+                elif seccion == "settings":
+                    vista = await post_settings_page.view(page, state, post_id)
+                elif seccion == "edit":
+                    vista = await post_editor_page.view(page, state, post_id)
+                else:
+                    vista = await post_page.view(page, state, post_id)
+
+                page.views.clear()
+                page.views.append(vista)
+                page.update()
+                return
 
         if route.startswith("/user/"):
             target_username = route.removeprefix("/user/")
