@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from config.database import SessionLocal, init_database
 from config.settings import settings
 from middleware.error_middleware import register_error_handlers
-from routes import auth_routes, tag_routes, user_routes
+from routes import auth_routes, post_routes, tag_routes, user_routes
 from seeds.seed_tags import seed_tags
 
 logging.basicConfig(
@@ -16,7 +16,6 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger("ashun")
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,7 +38,6 @@ async def lifespan(app: FastAPI):
     yield
 
     logger.info("Apagando Ashun API...")
-
 
 app = FastAPI(
     title="Ashun API",
@@ -69,7 +67,7 @@ register_error_handlers(app)
 app.include_router(auth_routes.router)
 app.include_router(user_routes.router)
 app.include_router(tag_routes.router)
-
+app.include_router(post_routes.router)
 
 @app.get("/", tags=["Sistema"], summary="Saludo de la API")
 def root() -> dict:
@@ -78,7 +76,6 @@ def root() -> dict:
         "version": "0.1.0",
         "docs": "/docs",
     }
-
 
 @app.get("/health", tags=["Sistema"], summary="Estado de la API y la base de datos")
 def health() -> dict:
@@ -94,7 +91,6 @@ def health() -> dict:
         database_status = f"error: {error}"
 
     return {"status": "ok", "database": database_status}
-
 
 if __name__ == "__main__":
     import uvicorn

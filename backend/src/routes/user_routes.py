@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.orm import Session
 from config.database import get_db
-from controller import search_controller, user_controller
+from controller import post_controller, search_controller, user_controller
 from entities.user import User
-from middleware.auth_middleware import get_current_user
+from middleware.auth_middleware import get_current_user, get_current_user_optional
 from validations.auth_validation import MessageResponse
+from validations.post_validation import PostSummaryResponse
 from validations.search_validation import AddSearchRequest, SearchHistoryEntry
 from validations.user_validation import (
     AvatarResponse,
@@ -31,7 +32,6 @@ def update_my_profile(
 ) -> UserResponse:
     return user_controller.update_my_profile(db, current_user, payload)
 
-
 @router.post(
     "/me/avatar",
     response_model=AvatarResponse,
@@ -52,7 +52,6 @@ async def upload_my_avatar(
         content=content,
     )
 
-
 @router.patch(
     "/me/password",
     response_model=MessageResponse,
@@ -67,7 +66,6 @@ def change_my_password(
         db, current_user, payload.current_password, payload.new_password
     )
 
-
 @router.delete(
     "/me",
     response_model=MessageResponse,
@@ -79,7 +77,6 @@ def delete_my_account(
     db: Session = Depends(get_db),
 ) -> MessageResponse:
     return user_controller.delete_my_account(db, current_user, payload.password)
-
 
 @router.delete(
     "/me/avatar",
@@ -93,7 +90,6 @@ def delete_my_avatar(
 ) -> UserResponse:
     return user_controller.delete_my_avatar(db, current_user)
 
-
 @router.get(
     "/me/searches",
     response_model=list[SearchHistoryEntry],
@@ -104,7 +100,6 @@ def list_my_searches(
     db: Session = Depends(get_db),
 ) -> list[SearchHistoryEntry]:
     return search_controller.list_my_searches(db, current_user)
-
 
 @router.post(
     "/me/searches",
@@ -118,7 +113,6 @@ def add_my_search(
 ) -> list[SearchHistoryEntry]:
     return search_controller.add_my_search(db, current_user, payload)
 
-
 @router.delete(
     "/me/searches",
     response_model=MessageResponse,
@@ -129,7 +123,6 @@ def clear_my_searches(
     db: Session = Depends(get_db),
 ) -> MessageResponse:
     return search_controller.clear_my_searches(db, current_user)
-
 
 @router.get(
     "",
@@ -144,6 +137,17 @@ def search_users(
 ) -> list[UserSummaryResponse]:
     return search_controller.search_users(db, q, limit)
 
+@router.get(
+    "/{username}/posts",
+    response_model=list[PostSummaryResponse],
+    summary="Las publicaciones de un artista",
+)
+def list_user_posts(
+    username: str,
+    viewer: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+) -> list[PostSummaryResponse]:
+    return post_controller.list_user_posts(db, username, viewer)
 
 @router.get(
     "/{username}",

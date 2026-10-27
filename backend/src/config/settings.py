@@ -25,7 +25,11 @@ class Settings(BaseSettings):
     frontend_url: str = "*"
 
     upload_dir: Path = BACKEND_DIR / "uploads"
+
     max_upload_size: int = 5 * 1024 * 1024
+
+    max_audio_size: int = 15 * 1024 * 1024
+    max_video_size: int = 50 * 1024 * 1024
 
     model_config = SettingsConfigDict(
         env_file=(PROJECT_DIR / ".env", BACKEND_DIR / ".env"),
@@ -33,6 +37,10 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    @property
+    def posts_dir(self) -> Path:
+        return self.upload_dir / "posts"
 
     @property
     def sqlalchemy_url(self) -> str:
@@ -59,7 +67,7 @@ class Settings(BaseSettings):
             return ["*"]
         return [origin.strip() for origin in self.frontend_url.split(",") if origin.strip()]
 
-
 settings = Settings()
 
 settings.upload_dir.mkdir(parents=True, exist_ok=True)
+settings.posts_dir.mkdir(parents=True, exist_ok=True)
