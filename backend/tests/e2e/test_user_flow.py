@@ -3,7 +3,6 @@ import pytest
 EMAIL = "nuevo.artista@ubiobio.cl"
 USERNAME = "nuevoartista"
 PASSWORD = "Secreta123"
-
 DESCRIPCION = "Mi primera obra en Ashun, pintada este verano"
 
 def test_register_login_and_create_a_post(api):

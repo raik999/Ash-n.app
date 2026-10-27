@@ -1,7 +1,7 @@
 import pytest
+
 from fastapi.testclient import TestClient
 from sqlalchemy import text
-
 from config.database import engine
 from index import app
 
