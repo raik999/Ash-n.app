@@ -1,11 +1,11 @@
 from __future__ import annotations
-
-import os
 from typing import Any
 
 import httpx
 
-API_BASE_URL = os.getenv("ASHUN_API_URL", "http://localhost:8000")
+from config import api_base_url
+
+API_BASE_URL = api_base_url()
 
 REQUEST_TIMEOUT = 20.0
 
