@@ -6,7 +6,7 @@ def test_el_onboarding_completo_funciona(recorrido):
     pasos = [paso["nombre"] for paso in resultado["pasos"]]
     assert pasos == [
         "Crear la cuenta",
-        "La fecha de nacimiento rechaza lo imposible",
+        "La fecha de nacimiento es obligatoria y tiene que ser valida",
         "Escribir una fecha valida",
         "Elegir las especialidades",
         "Omitir la foto de perfil",
@@ -86,3 +86,28 @@ def test_la_fecha_invalida_no_queda_guardada(recorrido, api):
     perfil = api.get("/api/auth/me").json()
 
     assert perfil["birthdate"] == datos["nacimiento"]
+
+def test_la_fecha_de_nacimiento_no_se_puede_borrar(recorrido, api):
+    resultado = recorrido("onboarding")
+    datos = resultado["datos"]
+    usuario = datos["usuario"]
+
+    login = api.post(
+        "/api/auth/login",
+        json={"identifier": usuario["username"], "password": usuario["password"]},
+    )
+    api.headers["Authorization"] = f"Bearer {login.json()['access_token']}"
+
+    borrar = api.patch("/api/users/me", json={"birthdate": None})
+
+    assert borrar.status_code == 422, borrar.text
+    assert "obligatoria" in borrar.json()["detail"]
+    assert borrar.json()["field"] == "birthdate"
+
+    assert api.get("/api/auth/me").json()["birthdate"] == datos["nacimiento"]
+
+    otra_bio = api.patch("/api/users/me", json={"bio": "Acuarela y tinta"})
+
+    assert otra_bio.status_code == 200, otra_bio.text
+    assert otra_bio.json()["bio"] == "Acuarela y tinta"
+    assert otra_bio.json()["birthdate"] == datos["nacimiento"]

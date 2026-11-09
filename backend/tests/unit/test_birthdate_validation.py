@@ -14,8 +14,21 @@ def test_a_valid_birthdate_is_returned_unchanged(anios):
     fecha = fecha_de_alguien_de(anios)
     assert UpdateProfileRequest.validate_birthdate(fecha) == fecha
 
-def test_birthdate_none_is_accepted():
-    assert UpdateProfileRequest.validate_birthdate(None) is None
+def test_birthdate_none_is_rejected():
+    with pytest.raises(ValueError, match="obligatoria"):
+        UpdateProfileRequest.validate_birthdate(None)
+
+def test_not_sending_the_birthdate_is_a_different_thing():
+    peticion = UpdateProfileRequest(bio="Pinto al oleo")
+
+    assert peticion.birthdate is None
+    assert "birthdate" not in peticion.model_dump(exclude_unset=True)
+
+def test_sending_the_birthdate_as_null_is_rejected_through_the_model():
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError, match="obligatoria"):
+        UpdateProfileRequest(bio="Pinto al oleo", birthdate=None)
 
 def test_someone_born_exactly_13_years_ago_today_is_accepted():
     try:
