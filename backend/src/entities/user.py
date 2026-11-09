@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import enum
 
-from datetime import date
+from datetime import date, datetime
 from typing import TYPE_CHECKING
-from sqlalchemy import Date, Enum, Integer, String, Text
+from sqlalchemy import Date, DateTime, Enum, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from entities.base import Base, TimestampMixin
 from entities.tag import user_tags
@@ -12,14 +12,11 @@ from entities.tag import user_tags
 if TYPE_CHECKING:
     from entities.tag import Tag
 
-
 class UserRole(str, enum.Enum):
     USER = "user"
     ADMIN = "admin"
 
-
 class User(Base, TimestampMixin):
-
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -34,6 +31,10 @@ class User(Base, TimestampMixin):
     )
 
     birthdate: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    notifications_seen_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
     tags: Mapped[list[Tag]] = relationship(
