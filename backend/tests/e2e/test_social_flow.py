@@ -107,3 +107,30 @@ def test_el_recorrido_social_no_toca_el_perfil(recorrido, api):
         assert perfil["bio"] is None
         assert perfil["tipo"] == []
         assert perfil["avatar_url"] is None
+
+def test_la_publicacion_rechazada_no_quedo_guardada(recorrido, api):
+    resultado = recorrido("social")
+    ana = resultado["datos"]["ana"]
+
+    login = api.post(
+        "/api/auth/login",
+        json={"identifier": ana["username"], "password": ana["password"]},
+    )
+    api.headers["Authorization"] = f"Bearer {login.json()['access_token']}"
+
+    publicaciones = api.get(f"/api/users/{ana['username']}/posts").json()
+
+    assert len(publicaciones) == 1, (
+        f"Deberia haber una sola publicacion y hay {len(publicaciones)}: "
+        f"{[p.get('description') for p in publicaciones]}"
+    )
+    assert publicaciones[0]["description"] == resultado["datos"]["descripcion"]
+
+def test_el_comentario_vacio_no_se_guardo(recorrido, api):
+    resultado = recorrido("social")
+    post_id = resultado["datos"]["post_id"]
+
+    comentarios = api.get(f"/api/posts/{post_id}/comments")
+
+    assert comentarios.status_code == 200, comentarios.text
+    assert comentarios.json() == []
