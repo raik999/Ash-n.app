@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from datetime import datetime, timezone
 from functools import partial
 from typing import Any
@@ -120,7 +119,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
             border_radius=12,
             padding=ft.Padding.symmetric(horizontal=12, vertical=10),
             ink=True,
-            on_click=partial(_abrir, abrir_chat, chat["id"]),
+            on_click=partial(abrir_chat, chat["id"]),
             tooltip=f"Abrir el chat con {otro['username']}",
             content=ft.Row(
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -271,6 +270,3 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
             )
         ],
     )
-
-def _abrir(accion, chat_id: int, evento) -> Any:
-    return accion(chat_id)
