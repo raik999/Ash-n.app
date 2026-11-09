@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from datetime import date
 from typing import Any
 
 import flet as ft
@@ -17,9 +17,34 @@ def personaje(base: str, nombre_visible: str, sufijo: str = "") -> dict[str, str
         "password": CLAVE,
     }
 
+def _sigue_en(piloto: Piloto, ruta: str, que_se_esperaba: str) -> None:
+    if piloto.ruta != ruta:
+        raise AssertionError(
+            f"[{piloto.nombre}] {que_se_esperaba}, pero la app avanzo de "
+            f"{ruta} a {piloto.ruta}."
+        )
+
+def _error_del_campo(piloto: Piloto, etiqueta: str) -> str:
+    return piloto.campo(etiqueta).error or ""
+
+def _exigir_error_en(piloto: Piloto, etiqueta: str, texto: str) -> None:
+    mensaje = _error_del_campo(piloto, etiqueta)
+
+    if texto.lower() not in mensaje.lower():
+        errores = {
+            (c.label or c.hint_text or "?"): c.error
+            for c in piloto.campos()
+            if c.error
+        }
+        raise AssertionError(
+            f"[{piloto.nombre}] Esperaba el error '{texto}' bajo el campo "
+            f"'{etiqueta}'.\nLos campos marcados en rojo son: {errores or 'ninguno'}"
+        )
+
 async def _registrarse(piloto: Piloto, datos: dict[str, str]) -> None:
     await piloto.ir("/register")
     piloto.exigir_texto("Bienvenido")
+
     await piloto.escribir("Mail", datos["email"])
     await piloto.escribir("Nombre completo", datos["name"])
     await piloto.escribir("Nombre de usuario", datos["username"])
@@ -36,8 +61,10 @@ async def _registrarse(piloto: Piloto, datos: dict[str, str]) -> None:
 
 async def _iniciar_sesion(piloto: Piloto, datos: dict[str, str]) -> None:
     await piloto.ir("/login")
+
     await piloto.escribir("Nombre de Usuario o Mail", datos["username"])
     await piloto.escribir("Contraseña", datos["password"])
+
     await piloto.tocar("Iniciar Sesion")
 
     if piloto.ruta != "/profile":
@@ -76,12 +103,42 @@ async def recorrido_onboarding(piloto: Piloto, sufijo: str = "") -> dict[str, An
     async with piloto.paso("Crear la cuenta"):
         await _registrarse(piloto, datos)
 
-    async with piloto.paso("Escribir la fecha de nacimiento"):
+    async with piloto.paso("La fecha de nacimiento rechaza lo imposible"):
         piloto.exigir_texto("Ingresa tu fecha de nacimiento")
+        piloto.limpiar_avisos()
+
+        await piloto.escribir("DD", "31")
+        await piloto.escribir("MM", "02")
+        await piloto.escribir("AAAA", "2000")
+        await piloto.tocar("Listo")
+
+        if not piloto.hubo_aviso("Esa fecha no existe"):
+            raise AssertionError(
+                f"El 31 de febrero deberia rechazarse. Avisos: {piloto.avisos()}"
+            )
+        _sigue_en(piloto, "/onboarding/birthdate", "La fecha 31/02 es invalida")
+
+        piloto.limpiar_avisos()
+        hoy = date.today()
+
+        await piloto.escribir("DD", "01")
+        await piloto.escribir("MM", "01")
+        await piloto.escribir("AAAA", str(hoy.year - 10))
+        await piloto.tocar("Listo")
+
+        if not piloto.hubo_aviso("al menos 13"):
+            raise AssertionError(
+                f"Un chico de 10 anios deberia rechazarse. Avisos: {piloto.avisos()}"
+            )
+        _sigue_en(piloto, "/onboarding/birthdate", "Un menor de 13 no puede pasar")
+
+    async with piloto.paso("Escribir una fecha valida"):
+        piloto.limpiar_avisos()
 
         await piloto.escribir("DD", DIA)
         await piloto.escribir("MM", MES)
         await piloto.escribir("AAAA", ANIO)
+
         await piloto.tocar("Listo")
 
         if piloto.ruta != "/onboarding/tags":
@@ -198,7 +255,21 @@ async def recorrido_social(piloto: Piloto, sufijo: str = "") -> dict[str, Any]:
         if piloto.ruta != "/post/new":
             raise AssertionError(f"Esperaba el editor y estoy en {piloto.ruta}")
 
+        piloto.limpiar_avisos()
+
         await piloto.escribir("Titulo", TITULO)
+        await piloto.escribir("Descripcion", "corta")
+        await piloto.tocar("Publicar")
+
+        if not piloto.hubo_aviso("al menos 10 caracteres"):
+            raise AssertionError(
+                f"Una descripcion de 5 letras deberia rechazarse. "
+                f"Avisos: {piloto.avisos()}"
+            )
+        _sigue_en(piloto, "/post/new", "Una publicacion vacia no se puede publicar")
+
+        piloto.limpiar_avisos()
+
         await piloto.escribir("Descripcion", DESCRIPCION)
 
         await piloto.tocar("Publicar")
@@ -291,6 +362,10 @@ async def recorrido_social(piloto: Piloto, sufijo: str = "") -> dict[str, Any]:
 
         piloto.exigir_texto("Todavia no hay comentarios")
 
+        await piloto.tocar("Enviar")
+
+        piloto.exigir_texto("Todavia no hay comentarios")
+
         await piloto.escribir("Escribe un comentario", COMENTARIO)
         await piloto.tocar("Enviar")
 
@@ -357,6 +432,138 @@ async def recorrido_social(piloto: Piloto, sufijo: str = "") -> dict[str, Any]:
         "comentario": COMENTARIO,
     }
 
+async def recorrido_validaciones(piloto: Piloto, sufijo: str = "") -> dict[str, Any]:
+    datos = personaje("rai", "Raimundo Koch", sufijo)
+
+    TITULO = "Mi primera obra"
+    DESCRIPCION = "Un retrato a lapiz que hice el fin de semana"
+
+    async def llenar_registro(**cambios: str) -> None:
+        valores = {
+            "Mail": datos["email"],
+            "Nombre completo": datos["name"],
+            "Nombre de usuario": datos["username"],
+            "Contraseña": datos["password"],
+            "Confirmar Contraseña": datos["password"],
+        }
+        valores.update(cambios)
+
+        for etiqueta, valor in valores.items():
+            await piloto.escribir(etiqueta, valor)
+
+    async with piloto.paso("El formulario rechaza un correo mal escrito"):
+        await piloto.ir("/register")
+        piloto.exigir_texto("Bienvenido")
+
+        await llenar_registro(Mail="rai-arroba-ubiobio.cl")
+        await piloto.tocar("Iniciar Sesion")
+
+        _exigir_error_en(piloto, "Mail", "no parece valido")
+        _sigue_en(piloto, "/register", "Un correo sin arroba es invalido")
+
+    async with piloto.paso("Rechaza una contrasena de menos de 6 caracteres"):
+        await llenar_registro(**{"Contraseña": "abc", "Confirmar Contraseña": "abc"})
+        await piloto.tocar("Iniciar Sesion")
+
+        _exigir_error_en(piloto, "Contraseña", "Minimo 6")
+        _sigue_en(piloto, "/register", "Una contrasena de 3 letras es muy corta")
+
+    async with piloto.paso("Rechaza dos contrasenas que no coinciden"):
+        await llenar_registro(**{"Confirmar Contraseña": "OtraClave456"})
+        await piloto.tocar("Iniciar Sesion")
+
+        _exigir_error_en(piloto, "Confirmar Contraseña", "no coinciden")
+        _sigue_en(piloto, "/register", "Las dos contrasenas tienen que ser iguales")
+
+    async with piloto.paso("Rechaza un nombre de usuario de menos de 3 caracteres"):
+        await llenar_registro(**{"Nombre de usuario": "ra"})
+        await piloto.tocar("Iniciar Sesion")
+
+        _exigir_error_en(piloto, "Nombre de usuario", "Minimo 3")
+        _sigue_en(piloto, "/register", "Un @ de 2 letras es muy corto")
+
+    async with piloto.paso("Con todo correcto, la cuenta se crea"):
+        await llenar_registro()
+        await piloto.tocar("Iniciar Sesion")
+
+        if piloto.ruta != "/onboarding/birthdate":
+            raise AssertionError(
+                f"El registro valido no avanzo. Sigue en {piloto.ruta}.\n"
+                f"Avisos: {piloto.avisos()}"
+            )
+
+    async with piloto.paso("Cerrar sesion"):
+        await piloto.ir("/profile")
+        await _cerrar_sesion(piloto)
+
+    async with piloto.paso("El login rechaza una contrasena incorrecta"):
+        piloto.limpiar_avisos()
+
+        await piloto.ir("/login")
+        await piloto.escribir("Nombre de Usuario o Mail", datos["username"])
+        await piloto.escribir("Contraseña", "ClaveEquivocada999")
+        await piloto.tocar("Iniciar Sesion")
+
+        if not piloto.hubo_aviso("incorrectos"):
+            raise AssertionError(
+                f"Esperaba el aviso de credenciales incorrectas. "
+                f"Avisos: {piloto.avisos()}"
+            )
+        _sigue_en(piloto, "/login", "Con la contrasena mala no se entra")
+
+    async with piloto.paso("El login rechaza un usuario que no existe"):
+        piloto.limpiar_avisos()
+
+        await piloto.escribir("Nombre de Usuario o Mail", "nadie" + sufijo)
+        await piloto.escribir("Contraseña", datos["password"])
+        await piloto.tocar("Iniciar Sesion")
+
+        if not piloto.hubo_aviso("incorrectos"):
+            raise AssertionError(
+                f"Esperaba el mismo aviso que con la contrasena mala. "
+                f"Avisos: {piloto.avisos()}"
+            )
+        _sigue_en(piloto, "/login", "Un usuario inexistente no entra")
+
+    async with piloto.paso("Con las credenciales correctas, entra"):
+        piloto.limpiar_avisos()
+        await _iniciar_sesion(piloto, datos)
+
+        piloto.exigir_texto(f"@{datos['username']}")
+
+    async with piloto.paso("Crear la primera publicacion"):
+        await piloto.tocar("Crear una publicacion")
+
+        await piloto.escribir("Titulo", TITULO)
+        await piloto.escribir("Descripcion", DESCRIPCION)
+        await piloto.tocar("Publicar")
+
+        if not piloto.hubo_aviso("Publicacion creada"):
+            raise AssertionError(
+                f"Esperaba el aviso de publicacion creada. Avisos: {piloto.avisos()}"
+            )
+
+        piloto.exigir_texto(DESCRIPCION)
+
+    async with piloto.paso("No se puede registrar el mismo correo dos veces"):
+        piloto.limpiar_avisos()
+        await _cerrar_sesion(piloto)
+        piloto.limpiar_avisos()
+
+        await piloto.ir("/register")
+
+        await llenar_registro(**{"Nombre de usuario": "otro" + (sufijo or "nombre")})
+        await piloto.tocar("Iniciar Sesion")
+
+        _exigir_error_en(piloto, "Mail", "ya esta registrado")
+        _sigue_en(piloto, "/register", "Ese correo ya tiene cuenta")
+
+    return {
+        "usuario": datos,
+        "titulo": TITULO,
+        "descripcion": DESCRIPCION,
+    }
+
 RECORRIDOS = {
     "onboarding": {
         "titulo": "Onboarding del perfil",
@@ -373,5 +580,14 @@ RECORRIDOS = {
             "Ana vuelve y borra el comentario."
         ),
         "funcion": recorrido_social,
+    },
+    "validaciones": {
+        "titulo": "Registro, validaciones y primera publicacion",
+        "resumen": (
+            "Pelea con el formulario: correo mal escrito, contrasena corta, "
+            "contrasenas distintas, login fallido y correo repetido. Y al "
+            "final, todo bien."
+        ),
+        "funcion": recorrido_validaciones,
     },
 }
