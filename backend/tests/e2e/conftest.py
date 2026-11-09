@@ -1,18 +1,38 @@
+import json
 import socket
 import subprocess
 import sys
 import time
+
 from pathlib import Path
 
 import httpx
 import pytest
 
 CARPETA_SRC = Path(__file__).resolve().parents[2] / "src"
+CARPETA_FRONTEND = Path(__file__).resolve().parents[3] / "frontend"
+
+MARCA_INICIO = "<<<RESULTADO>>>"
+MARCA_FIN = "<<<FIN>>>"
 
 def puerto_libre() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
+
+def python_del_frontend() -> str:
+    candidatos = [
+        CARPETA_FRONTEND / "venv" / "Scripts" / "python.exe",
+        CARPETA_FRONTEND / "venv" / "bin" / "python",
+        CARPETA_FRONTEND / ".venv" / "Scripts" / "python.exe",
+        CARPETA_FRONTEND / ".venv" / "bin" / "python",
+    ]
+
+    for candidato in candidatos:
+        if candidato.is_file():
+            return str(candidato)
+
+    return sys.executable
 
 @pytest.fixture(scope="session")
 def servidor(base_de_pruebas):
@@ -64,7 +84,9 @@ def servidor(base_de_pruebas):
         time.sleep(0.2)
     else:
         proceso.terminate()
-        pytest.fail(f"El servidor no respondio en 30 segundos. Ultimo error: {ultimo_error}")
+        pytest.fail(
+            f"El servidor no respondio en 30 segundos. Ultimo error: {ultimo_error}"
+        )
 
     yield base_url
 
@@ -80,10 +102,83 @@ def api(servidor):
     with httpx.Client(base_url=servidor, timeout=10.0) as cliente:
         yield cliente
 
+@pytest.fixture
+def recorrido(servidor):
+    def ejecutar(nombre: str, sufijo: str = "") -> dict:
+        comando = [
+            python_del_frontend(),
+            "-m",
+            "pruebas.correr",
+            nombre,
+            "--url",
+            servidor,
+        ]
+        if sufijo:
+            comando += ["--sufijo", sufijo]
+
+        proceso = subprocess.run(
+            comando,
+            cwd=CARPETA_FRONTEND,
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+
+        salida = proceso.stdout or ""
+
+        if MARCA_INICIO not in salida or MARCA_FIN not in salida:
+            pytest.fail(
+                "El recorrido del frontend no llego a terminar.\n\n"
+                f"comando: {' '.join(comando)}\n"
+                f"carpeta: {CARPETA_FRONTEND}\n\n"
+                f"--- salida ---\n{salida}\n"
+                f"--- errores ---\n{proceso.stderr}"
+            )
+
+        bruto = salida.split(MARCA_INICIO, 1)[1].split(MARCA_FIN, 1)[0].strip()
+        resultado = json.loads(bruto)
+
+        if not resultado["ok"]:
+            pytest.fail(_informe(resultado))
+
+        return resultado
+
+    return ejecutar
+
+def _informe(resultado: dict) -> str:
+    simbolos = {"ok": "[ok]   ", "fallo": "[FALLO]", "pendiente": "[  -  ]"}
+
+    lineas = [
+        "",
+        f"El recorrido '{resultado['titulo']}' se corto.",
+        "",
+    ]
+
+    for paso in resultado["pasos"]:
+        lineas.append(
+            f"  {simbolos.get(paso['estado'], '')} {paso['numero']}. {paso['nombre']}"
+        )
+        if paso["detalle"]:
+            for linea in paso["detalle"].splitlines():
+                lineas.append(f"              {linea}")
+
+    lineas += ["", f"  Error: {resultado['error']}", ""]
+
+    if resultado.get("rutas"):
+        lineas.append(f"  Pantallas visitadas: {' -> '.join(resultado['rutas'])}")
+
+    if resultado.get("avisos"):
+        lineas.append(f"  Avisos que mostro la app: {resultado['avisos']}")
+
+    if resultado.get("traza"):
+        lineas += ["", "  --- traza completa ---", resultado["traza"]]
+
+    return "\n".join(lineas)
+
 @pytest.fixture(autouse=True)
 def base_limpia_e2e(servidor):
+    
     from sqlalchemy import text
-
     from config.database import engine
 
     tablas = [
