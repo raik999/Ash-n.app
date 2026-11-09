@@ -47,8 +47,13 @@ def full_width(control: ft.Control) -> ft.Row:
 def vspace(height: int) -> ft.Container:
     return ft.Container(height=height)
 
-def bottom_nav(page: ft.Page, selected: int = 3, on_change=None) -> ft.NavigationBar:
-    DESTINATIONS = {1: "/search", 3: "/profile"}
+def bottom_nav(
+    page: ft.Page,
+    selected: int = 3,
+    on_change=None,
+    sin_leer: int = 0,
+) -> ft.NavigationBar:
+    DESTINATIONS = {1: "/search", 2: "/chats", 3: "/profile"}
 
     async def handle_change(e: ft.ControlEvent) -> None:
         index = e.control.selected_index
@@ -73,7 +78,19 @@ def bottom_nav(page: ft.Page, selected: int = 3, on_change=None) -> ft.Navigatio
         destinations=[
             ft.NavigationBarDestination(icon=ft.Icons.HOME_OUTLINED, label="Inicio"),
             ft.NavigationBarDestination(icon=ft.Icons.SEARCH, label="Buscar"),
-            ft.NavigationBarDestination(icon=ft.Icons.CHAT_BUBBLE_OUTLINE, label="Mensajes"),
+            ft.NavigationBarDestination(
+                icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
+                label="Mensajes",
+                badge=(
+                    ft.Badge(
+                        label=str(sin_leer) if sin_leer < 100 else "99+",
+                        bgcolor=Colors.BRAND_RED,
+                        text_color=Colors.TEXT_ON_DARK,
+                    )
+                    if sin_leer > 0
+                    else None
+                ),
+            ),
             ft.NavigationBarDestination(icon=ft.Icons.PERSON_OUTLINE, label="Perfil"),
         ],
     )
