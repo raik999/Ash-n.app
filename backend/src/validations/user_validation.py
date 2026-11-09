@@ -4,13 +4,11 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, mo
 from entities.user import UserRole
 from validations.auth_validation import USERNAME_PATTERN
 
-
 class TagResponse(BaseModel):
     id: int
     name: str
     color: str
     model_config = ConfigDict(from_attributes=True)
-
 
 class UserResponse(BaseModel):
     id: int
@@ -29,7 +27,6 @@ class UserResponse(BaseModel):
         populate_by_name=True,
     )
 
-
 class PublicUserResponse(BaseModel):
     id: int
     name: str
@@ -41,7 +38,6 @@ class PublicUserResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
-
 class UserSummaryResponse(BaseModel):
     id: int
     username: str
@@ -49,7 +45,6 @@ class UserSummaryResponse(BaseModel):
     avatar_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
-
 
 class UpdateProfileRequest(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=80)
@@ -83,9 +78,10 @@ class UpdateProfileRequest(BaseModel):
 
     @field_validator("birthdate")
     @classmethod
-    def validate_birthdate(cls, value: date | None) -> date | None:
+    def validate_birthdate(cls, value: date | None) -> date:
         if value is None:
-            return None
+            raise ValueError("La fecha de nacimiento es obligatoria")
+
         today = date.today()
         if value > today:
             raise ValueError("La fecha de nacimiento no puede estar en el futuro")
@@ -106,10 +102,8 @@ class UpdateProfileRequest(BaseModel):
             raise ValueError("Puedes seleccionar como maximo 10 especialidades")
         return unique
 
-
 class AvatarResponse(BaseModel):
     avatar_url: str
-
 
 class ChangePasswordRequest(BaseModel):
     current_password: str = Field(..., min_length=1, max_length=72)
@@ -132,7 +126,6 @@ class ChangePasswordRequest(BaseModel):
             raise ValueError("La contrasena nueva debe ser distinta a la actual")
 
         return self
-
 
 class DeleteAccountRequest(BaseModel):
     password: str = Field(..., min_length=1, max_length=72)
