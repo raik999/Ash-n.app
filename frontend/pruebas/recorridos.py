@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from datetime import date
 from typing import Any
 
@@ -386,12 +387,12 @@ async def recorrido_social(piloto: Piloto, sufijo: str = "") -> dict[str, Any]:
 
         piloto.exigir_texto("Todavia no hay comentarios")
 
-        await piloto.tocar("Enviar")
+        await piloto.tocar("Publicar el comentario")
 
         piloto.exigir_texto("Todavia no hay comentarios")
 
         await piloto.escribir("Escribe un comentario", COMENTARIO)
-        await piloto.tocar("Enviar")
+        await piloto.tocar("Publicar el comentario")
 
         piloto.exigir_texto(COMENTARIO)
 

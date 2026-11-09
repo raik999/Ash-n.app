@@ -546,12 +546,18 @@ async def piloto_sin_pantalla(
 def enrutador_de_app(page: Any, state: Any) -> Callable:
     import traceback
 
+    from app import apilar
+
     from pages import (
         account_page,
         avatar_page,
         birthdate_page,
+        chat_page,
+        chat_settings_page,
+        chats_page,
         comments_page,
         login_page,
+        notifications_page,
         post_editor_page,
         post_page,
         post_settings_page,
@@ -581,6 +587,8 @@ def enrutador_de_app(page: Any, state: Any) -> Callable:
                 page, state, "/settings/account"
             ),
             "/search": lambda: search_page.view(page, state),
+            "/chats": lambda: chats_page.view(page, state),
+            "/notifications": lambda: notifications_page.view(page, state),
             "/post/new": lambda: post_editor_page.view(page, state),
         }
 
@@ -609,18 +617,31 @@ def enrutador_de_app(page: Any, state: Any) -> Callable:
                 else:
                     vista = await post_page.view(page, state, post_id)
 
-                page.views.clear()
-                page.views.append(vista)
-                page.update()
+                if vista.controls:
+                    apilar(page, vista)
+                return
+
+        if ruta.startswith("/chat/"):
+            partes = ruta.strip("/").split("/")
+            if len(partes) >= 2 and partes[1].isdigit():
+                chat_id = int(partes[1])
+                seccion = partes[2] if len(partes) > 2 else ""
+
+                if seccion == "settings":
+                    vista = await chat_settings_page.view(page, state, chat_id)
+                else:
+                    vista = await chat_page.view(page, state, chat_id)
+
+                if vista.controls:
+                    apilar(page, vista)
                 return
 
         if ruta.startswith("/user/"):
             username = ruta.removeprefix("/user/")
             if username:
                 vista = await public_profile_page.view(page, state, username)
-                page.views.clear()
-                page.views.append(vista)
-                page.update()
+                if vista.controls:
+                    apilar(page, vista)
                 return
 
         constructor = rutas.get(ruta)
@@ -630,8 +651,7 @@ def enrutador_de_app(page: Any, state: Any) -> Callable:
 
         vista = await constructor()
 
-        page.views.clear()
-        page.views.append(vista)
-        page.update()
+        if vista.controls:
+            apilar(page, vista)
 
     return route_change
