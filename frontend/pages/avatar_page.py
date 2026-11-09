@@ -13,7 +13,7 @@ from components.layout import full_width, screen, vspace
 from context.app_state import AppState
 from services import user_service
 from services.api_client import ApiError
-from style.theme import Colors, Sizes, TextSizes
+from style.theme import Colors, Radius, Sizes, TextSizes
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
 
@@ -131,8 +131,8 @@ async def view(page: ft.Page, state: AppState, next_route: str = "/profile") -> 
                                     ),
                                     width=58,
                                     height=58,
-                                    bgcolor="#C4C4C4",
-                                    border_radius=29,
+                                    bgcolor=Colors.SURFACE_STRONG,
+                                    border_radius=Radius.PILL,
                                     alignment=ft.Alignment.CENTER,
                                     on_click=open_file_picker,
                                     ink=True,
@@ -151,7 +151,7 @@ async def view(page: ft.Page, state: AppState, next_route: str = "/profile") -> 
                     color=Colors.TEXT_MUTED,
                     text_align=ft.TextAlign.CENTER,
                 ),
-                ft.Container(expand=True),
+                vspace(40),
                 full_width(done_button),
                 vspace(10),
                 ft.Row(

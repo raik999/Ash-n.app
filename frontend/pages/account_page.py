@@ -9,6 +9,7 @@ from components.settings_row import screen_header, section_title, settings_row
 from context.app_state import AppState
 from services import user_service
 from services.api_client import ApiError
+from style.responsive import pantalla
 from style.theme import Colors, Fonts, Sizes, TextSizes
 
 async def view(page: ft.Page, state: AppState) -> ft.View:
@@ -266,7 +267,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                     screen_header("Tu cuenta", go_back),
                     ft.Container(
                         expand=True,
-                        padding=ft.Padding.symmetric(horizontal=Sizes.PAGE_PADDING),
+                        padding=ft.Padding.symmetric(horizontal=pantalla().padding),
                         content=ft.Column(
                             spacing=2,
                             scroll=ft.ScrollMode.AUTO,

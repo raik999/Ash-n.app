@@ -5,12 +5,13 @@ from typing import Any
 import flet as ft
 
 from components.feedback import avatar_view, show_error
-from components.layout import safe_update
+from components.layout import estado_vacio, safe_update, tarjeta
 from components.settings_row import screen_header
 from context.app_state import AppState
 from pages.chats_page import tiempo_corto
 from services import chat_service
 from services.api_client import ApiError, api
+from style.responsive import pantalla
 from style.theme import Colors, Fonts, Sizes, TextSizes
 
 TIPO_LIKE = "like"
@@ -88,14 +89,11 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                 )
             )
 
-        return ft.Container(
+        return tarjeta(
             bgcolor=Colors.PEACH_SOFT if es_nueva else Colors.SURFACE,
-            border_radius=12,
-            padding=ft.Padding.symmetric(horizontal=12, vertical=10),
-            ink=True,
             on_click=partial(abrir_post, aviso["post_id"]),
             tooltip="Ver la publicacion",
-            content=ft.Row(
+            contenido=ft.Row(
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=12,
                 controls=[
@@ -132,31 +130,11 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
         )
 
     def vacio() -> ft.Control:
-        return ft.Container(
-            alignment=ft.Alignment.CENTER,
-            padding=40,
-            content=ft.Column(
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=10,
-                tight=True,
-                controls=[
-                    ft.Icon(
-                        ft.Icons.CAMPAIGN_OUTLINED, size=52, color=Colors.PLACEHOLDER
-                    ),
-                    ft.Text(
-                        "Todavia no hay nada",
-                        size=TextSizes.SUBTITLE,
-                        color=Colors.TEXT_PRIMARY,
-                    ),
-                    ft.Text(
-                        "Aqui vas a ver quien le da me gusta y quien comenta "
-                        "tus publicaciones.",
-                        size=TextSizes.SMALL,
-                        color=Colors.TEXT_MUTED,
-                        text_align=ft.TextAlign.CENTER,
-                    ),
-                ],
-            ),
+        return estado_vacio(
+            ft.Icons.CAMPAIGN_OUTLINED,
+            "Todavia no hay nada",
+            "Aqui vas a ver quien le da me gusta y quien comenta "
+            "tus publicaciones.",
         )
 
     try:
@@ -191,7 +169,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                     ft.Container(
                         expand=True,
                         padding=ft.Padding.symmetric(
-                            horizontal=Sizes.PAGE_PADDING, vertical=10
+                            horizontal=pantalla().padding, vertical=10
                         ),
                         content=lista,
                     ),

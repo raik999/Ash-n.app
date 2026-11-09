@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import mimetypes
+
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,7 @@ from components.tag_chip import selectable_chip
 from context.app_state import AppState
 from services import post_service
 from services.api_client import ApiError
+from style.responsive import pantalla
 from style.theme import Colors, Sizes, TextSizes
 
 MAX_ARCHIVOS = 10
@@ -328,7 +330,7 @@ async def view(
                     encabezado,
                     ft.Container(
                         expand=True,
-                        padding=ft.Padding.symmetric(horizontal=Sizes.PAGE_PADDING),
+                        padding=ft.Padding.symmetric(horizontal=pantalla().padding),
                         content=ft.Column(
                             spacing=12,
                             scroll=ft.ScrollMode.AUTO,

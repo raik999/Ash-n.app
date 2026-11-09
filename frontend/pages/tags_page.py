@@ -110,7 +110,7 @@ async def view(page: ft.Page, state: AppState, next_route: str = "/onboarding/av
                 ),
                 vspace(16),
                 selected_wrap,
-                ft.Container(expand=True),
+                vspace(28),
                 vspace(24),
                 full_width(done_button),
                 vspace(6),

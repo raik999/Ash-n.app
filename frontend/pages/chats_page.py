@@ -6,7 +6,8 @@ from typing import Any
 import flet as ft
 
 from components.feedback import avatar_view, show_error
-from components.layout import bottom_nav, safe_update
+from components.settings_row import boton_barra, encabezado_principal
+from components.layout import bottom_nav, estado_vacio, safe_update, tarjeta
 from context.app_state import AppState
 from services import chat_service
 from services.api_client import ApiError, api
@@ -15,6 +16,7 @@ from services.realtime_service import (
     EVENTO_CHAT_NUEVO,
     EVENTO_MENSAJE,
 )
+from style.responsive import pantalla
 from style.theme import Colors, Fonts, Sizes, TextSizes
 
 def tiempo_corto(cuando: str | None) -> str:
@@ -49,12 +51,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
 
     lista = ft.Column(spacing=4, scroll=ft.ScrollMode.AUTO, expand=True)
 
-    campana = ft.IconButton(
-        icon=ft.Icons.CAMPAIGN,
-        icon_size=28,
-        icon_color=Colors.TEXT_PRIMARY,
-        tooltip="Notificaciones",
-    )
+    campana = boton_barra(ft.Icons.CAMPAIGN, "Notificaciones")
 
     globo_campana = ft.Container(
         bgcolor=Colors.BRAND_RED,
@@ -114,14 +111,11 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                 )
             )
 
-        return ft.Container(
+        return tarjeta(
             bgcolor=Colors.SURFACE,
-            border_radius=12,
-            padding=ft.Padding.symmetric(horizontal=12, vertical=10),
-            ink=True,
             on_click=partial(abrir_chat, chat["id"]),
             tooltip=f"Abrir el chat con {otro['username']}",
-            content=ft.Row(
+            contenido=ft.Row(
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=12,
                 controls=[
@@ -169,31 +163,11 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
         )
 
     def vacio() -> ft.Control:
-        return ft.Container(
-            alignment=ft.Alignment.CENTER,
-            padding=40,
-            content=ft.Column(
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=10,
-                tight=True,
-                controls=[
-                    ft.Icon(
-                        ft.Icons.FORUM_OUTLINED, size=52, color=Colors.PLACEHOLDER
-                    ),
-                    ft.Text(
-                        "Todavia no tienes chats",
-                        size=TextSizes.SUBTITLE,
-                        color=Colors.TEXT_PRIMARY,
-                    ),
-                    ft.Text(
-                        "Entra al perfil de un artista y toca el globo que "
-                        "esta junto a su foto para empezar a hablar.",
-                        size=TextSizes.SMALL,
-                        color=Colors.TEXT_MUTED,
-                        text_align=ft.TextAlign.CENTER,
-                    ),
-                ],
-            ),
+        return estado_vacio(
+            ft.Icons.FORUM_OUTLINED,
+            "Todavia no tienes chats",
+            "Entra al perfil de un artista y toca el globo para "
+            "empezar a hablar.",
         )
 
     async def cargar() -> None:
@@ -228,42 +202,29 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                 spacing=0,
                 expand=True,
                 controls=[
-                    ft.Container(
-                        padding=ft.Padding.only(
-                            left=Sizes.PAGE_PADDING, right=8, top=14, bottom=8
-                        ),
-                        content=ft.Row(
-                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                            controls=[
-                                ft.Text(
-                                    "CHAT",
-                                    size=TextSizes.TITLE,
-                                    weight=ft.FontWeight.W_900,
-                                    color=Colors.TEXT_PRIMARY,
-                                    font_family=Fonts.HEADING,
-                                ),
-                                ft.Stack(
-                                    width=48,
-                                    height=48,
-                                    controls=[
-                                        ft.Container(
-                                            content=campana,
-                                            alignment=ft.Alignment.CENTER,
-                                        ),
-                                        ft.Container(
-                                            content=globo_campana,
-                                            right=0,
-                                            top=2,
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
+                    encabezado_principal(
+                        "Chats",
+                        acciones=[
+                            ft.Stack(
+                                width=Sizes.TOUCH_MIN,
+                                height=Sizes.TOUCH_MIN,
+                                controls=[
+                                    ft.Container(
+                                        content=campana,
+                                        alignment=ft.Alignment.CENTER,
+                                    ),
+                                    ft.Container(
+                                        content=globo_campana,
+                                        right=0,
+                                        top=2,
+                                    ),
+                                ],
+                            )
+                        ],
                     ),
                     ft.Container(
                         expand=True,
-                        padding=ft.Padding.symmetric(horizontal=Sizes.PAGE_PADDING),
+                        padding=ft.Padding.symmetric(horizontal=pantalla().padding),
                         content=lista,
                     ),
                 ],

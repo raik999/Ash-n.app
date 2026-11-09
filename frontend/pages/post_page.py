@@ -76,7 +76,7 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
     corazon = ft.IconButton(
         icon=ft.Icons.FAVORITE,
         icon_size=30,
-        icon_color=Colors.BRAND_RED if estado["liked"] else "#B5B5B5",
+        icon_color=Colors.BRAND_RED if estado["liked"] else Colors.PLACEHOLDER,
         tooltip="Me gusta",
     )
     contador_likes = ft.Text(
@@ -103,7 +103,9 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
         estado["liked"] = bool(respuesta["liked_by_me"])
         estado["count"] = int(respuesta["likes_count"])
 
-        corazon.icon_color = Colors.BRAND_RED if estado["liked"] else "#B5B5B5"
+        corazon.icon_color = (
+            Colors.BRAND_RED if estado["liked"] else Colors.PLACEHOLDER
+        )
         contador_likes.value = str(estado["count"])
         safe_update(corazon, contador_likes)
 

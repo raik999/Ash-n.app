@@ -7,7 +7,8 @@ from components.settings_row import screen_header, settings_row
 from context.app_state import AppState
 from services import post_service
 from services.api_client import ApiError
-from style.theme import Colors, Sizes
+from style.responsive import pantalla
+from style.theme import Colors
 
 async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
     ruta = f"/post/{post_id}/settings"
@@ -72,10 +73,12 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
                     ft.Container(
                         expand=True,
                         padding=ft.Padding.symmetric(
-                            horizontal=Sizes.PAGE_PADDING, vertical=10
+                            horizontal=pantalla().padding, vertical=10
                         ),
                         content=ft.Column(
                             spacing=2,
+                            scroll=ft.ScrollMode.AUTO,
+                            expand=True,
                             controls=[
                                 settings_row(
                                     ft.Icons.EDIT,

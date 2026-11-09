@@ -5,11 +5,13 @@ from typing import Any
 import flet as ft
 
 from components.feedback import avatar_view, show_error
+from components.compose_bar import barra_de_escritura, vaciar
 from components.layout import safe_update
 from components.settings_row import screen_header
 from context.app_state import AppState
 from services import post_service
 from services.api_client import ApiError, api
+from style.responsive import pantalla
 from style.theme import Colors, Sizes, TextSizes
 
 MAX_COMENTARIO = 800
@@ -18,21 +20,6 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
     ruta = f"/post/{post_id}/comments"
 
     lista = ft.Column(spacing=14, scroll=ft.ScrollMode.AUTO, expand=True)
-
-    campo = ft.TextField(
-        hint_text="Escribe un comentario",
-        border=ft.InputBorder.NONE,
-        filled=False,
-        dense=True,
-        expand=True,
-        max_length=MAX_COMENTARIO,
-        multiline=True,
-        min_lines=1,
-        max_lines=4,
-        text_size=TextSizes.BODY,
-        text_style=ft.TextStyle(color=Colors.TEXT_BODY),
-        cursor_color=Colors.TEXT_PRIMARY,
-    )
 
     async def borrar(comment_id: int) -> None:
         try:
@@ -137,50 +124,19 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
             show_error(page, error.message)
             return
 
-        campo.value = ""
-        safe_update(campo)
+        vaciar(campo)
         await cargar()
-
-    def limpiar(e) -> None:
-        campo.value = ""
-        safe_update(campo)
 
     async def volver(e) -> None:
         await page.push_route(f"/post/{post_id}")
 
-    campo.on_submit = enviar
-
     await cargar()
 
-    barra_escritura = ft.Container(
-        bgcolor=Colors.BACKGROUND,
-        padding=ft.Padding.symmetric(horizontal=Sizes.PAGE_PADDING, vertical=10),
-        content=ft.Container(
-            bgcolor="#D6D6D6",
-            border_radius=22,
-            padding=ft.Padding.only(left=16, right=4),
-            content=ft.Row(
-                vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=0,
-                controls=[
-                    campo,
-                    ft.IconButton(
-                        icon=ft.Icons.CLOSE,
-                        icon_size=18,
-                        icon_color=Colors.TEXT_PRIMARY,
-                        tooltip="Borrar lo escrito",
-                        on_click=limpiar,
-                    ),
-                    ft.IconButton(
-                        icon=ft.Icons.KEYBOARD_ARROW_UP,
-                        icon_size=22,
-                        icon_color=Colors.TEXT_PRIMARY,
-                        tooltip="Enviar",
-                        on_click=enviar,
-                    ),
-                ],
-            ),
-        ),
+    barra_escritura, campo = barra_de_escritura(
+        hint="Escribe un comentario",
+        maximo=MAX_COMENTARIO,
+        al_enviar=enviar,
+        tooltip_enviar="Publicar el comentario",
     )
 
     return ft.View(
@@ -197,7 +153,7 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
                     ft.Container(
                         expand=True,
                         padding=ft.Padding.symmetric(
-                            horizontal=Sizes.PAGE_PADDING, vertical=12
+                            horizontal=pantalla().padding, vertical=12
                         ),
                         content=lista,
                     ),

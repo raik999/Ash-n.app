@@ -99,7 +99,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                     color=Colors.TEXT_MUTED,
                     text_align=ft.TextAlign.CENTER,
                 ),
-                ft.Container(expand=True),
+                vspace(48),
                 full_width(done_button),
                 vspace(40),
             )

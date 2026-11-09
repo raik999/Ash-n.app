@@ -11,7 +11,8 @@ from components.tag_chip import display_chip
 from context.app_state import AppState
 from services import post_service, user_service
 from services.api_client import ApiError
-from style.theme import Colors, Fonts, Sizes, TextSizes
+from style.responsive import pantalla
+from style.theme import Colors, Fonts, Radius, Sizes, Space, TextSizes
 
 BIO_PLACEHOLDER = "Agrega una presentacion para que otros artistas sepan quien eres."
 
@@ -73,7 +74,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
     tag_controls.append(
         ft.Container(
             content=ft.Icon(ft.Icons.ADD, size=20, color=Colors.BRAND_DARK),
-            bgcolor="#A8A8A8",
+            bgcolor=Colors.PLACEHOLDER,
             padding=ft.Padding.symmetric(horizontal=18, vertical=6),
             border_radius=20,
             on_click=go_to_tags,
@@ -160,10 +161,10 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
 
         return ft.GridView(
             controls=tiles,
-            runs_count=3,
+            runs_count=pantalla().columnas,
             child_aspect_ratio=1.0,
-            spacing=6,
-            run_spacing=6,
+            spacing=Space.XXS + 2,
+            run_spacing=Space.XXS + 2,
             expand=True,
         )
 
@@ -216,7 +217,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                 controls=[
                     header,
                     ft.Container(
-                        padding=ft.Padding.symmetric(horizontal=Sizes.PAGE_PADDING, vertical=14),
+                        padding=ft.Padding.symmetric(horizontal=pantalla().padding, vertical=14),
                         content=ft.Column(
                             spacing=10,
                             controls=[

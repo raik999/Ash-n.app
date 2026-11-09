@@ -9,18 +9,10 @@ from components.layout import bottom_nav, safe_update
 from context.app_state import AppState
 from services import search_service
 from services.api_client import ApiError
-from style.theme import Colors, Sizes, TextSizes
+from style.responsive import pantalla
+from style.theme import Colors, Radius, Sizes, TextSizes
 
-BLOCK_COLORS = [
-    "#2E9E27",
-    "#F0743C",
-    "#BE2EDD",
-    "#4D7CFE",
-    "#F03C3C",
-    "#17B8C4",
-    "#E8A317",
-    "#E0457B",
-]
+BLOCK_COLORS = list(Colors.PALETA_AVATARES)
 
 LEFT_HEIGHTS = [210, 190, 230]
 RIGHT_HEIGHTS = [250, 200, 180]
@@ -71,8 +63,8 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
     )
 
     search_bar = ft.Container(
-        bgcolor="#D6D6D6",
-        border_radius=22,
+        bgcolor=Colors.SURFACE_STRONG,
+        border_radius=Radius.PILL,
         height=46,
         expand=True,
         padding=ft.Padding.only(left=16, right=4),
@@ -82,7 +74,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
             controls=[
                 ft.Container(expand=True, content=search_field),
                 clear_button,
-                ft.Container(width=1, height=22, bgcolor="#8C8C8C"),
+                ft.Container(width=1, height=22, bgcolor=Colors.PLACEHOLDER),
                 search_button,
             ],
         ),
@@ -109,7 +101,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                 ft.Container(
                     height=heights[(index // 2) % len(heights)],
                     bgcolor=BLOCK_COLORS[index % len(BLOCK_COLORS)],
-                    border_radius=4,
+                    border_radius=Radius.MD,
                     alignment=ft.Alignment.CENTER,
                     on_click=None,
                     content=ft.Text(
@@ -173,8 +165,8 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                         ),
                         on_click=wipe_recents,
                         style=ft.ButtonStyle(
-                            bgcolor="#D6D6D6",
-                            shape=ft.RoundedRectangleBorder(radius=20),
+                            bgcolor=Colors.SURFACE_STRONG,
+                            shape=ft.RoundedRectangleBorder(radius=Radius.PILL),
                             padding=ft.Padding.symmetric(horizontal=22, vertical=14),
                         ),
                     )
@@ -214,8 +206,8 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
             content=ft.Icon(icon, size=20, color=Colors.TEXT_PRIMARY),
             width=44,
             height=44,
-            bgcolor="#B8B8B8",
-            border_radius=22,
+            bgcolor=Colors.SURFACE_STRONG,
+            border_radius=Radius.PILL,
             alignment=ft.Alignment.CENTER,
         )
 
@@ -351,7 +343,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                 expand=True,
                 controls=[
                     ft.Container(
-                        padding=ft.Padding.only(left=6, right=Sizes.PAGE_PADDING, top=10, bottom=8),
+                        padding=ft.Padding.only(left=6, right=pantalla().padding, top=10, bottom=8),
                         content=ft.Row(
                             vertical_alignment=ft.CrossAxisAlignment.CENTER,
                             spacing=0,
@@ -360,7 +352,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                     ),
                     ft.Container(
                         expand=True,
-                        padding=ft.Padding.symmetric(horizontal=Sizes.PAGE_PADDING),
+                        padding=ft.Padding.symmetric(horizontal=pantalla().padding),
                         content=body,
                     ),
                 ],

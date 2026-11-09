@@ -11,7 +11,8 @@ from components.tag_chip import display_chip
 from context.app_state import AppState
 from services import post_service, user_service
 from services.api_client import ApiError, api
-from style.theme import Colors, Fonts, Sizes, TextSizes
+from style.responsive import pantalla
+from style.theme import Colors, Fonts, Radius, Sizes, Space, TextSizes
 
 async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
     if not state.user:
@@ -170,10 +171,10 @@ async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
                 grid_cell(pub, partial(abrir_publicacion, pub["id"]))
                 for pub in publicaciones
             ],
-            runs_count=3,
+            runs_count=pantalla().columnas,
             child_aspect_ratio=1.0,
-            spacing=6,
-            run_spacing=6,
+            spacing=Space.XXS + 2,
+            run_spacing=Space.XXS + 2,
             padding=ft.Padding.all(6),
             expand=True,
         )
@@ -230,7 +231,7 @@ async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
                 controls=[
                     header,
                     ft.Container(
-                        padding=ft.Padding.symmetric(horizontal=Sizes.PAGE_PADDING, vertical=14),
+                        padding=ft.Padding.symmetric(horizontal=pantalla().padding, vertical=14),
                         content=ft.Column(
                             spacing=10,
                             controls=[

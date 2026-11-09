@@ -1,18 +1,20 @@
 from __future__ import annotations
-
 from datetime import datetime, timezone
 from typing import Any
 
 import flet as ft
 
 from components.feedback import avatar_view, show_error
+from components.compose_bar import barra_de_escritura, vaciar
 from components.layout import safe_update
+from components.settings_row import boton_barra, screen_header
 from context.app_state import AppState
 from services import chat_service
 from services.chat_service import MAX_MENSAJE
 from services.api_client import ApiError, api
 from services.realtime_service import EVENTO_CHAT_ELIMINADO, EVENTO_MENSAJE
-from style.theme import Colors, Fonts, Sizes, TextSizes
+from style.responsive import pantalla
+from style.theme import Colors, Fonts, Radius, Space, Sizes, TextSizes
 
 def hora_corta(cuando: str | None) -> str:
     if not cuando:
@@ -111,9 +113,9 @@ async def view(page: ft.Page, state: AppState, chat_id: int) -> ft.View:
                     ),
                     ft.Text(
                         hora_corta(mensaje.get("created_at")),
-                        size=TextSizes.SMALL - 2,
+                        size=pantalla().texto(TextSizes.SMALL),
                         color=(
-                            "#FFFFFFAA" if mio else Colors.TEXT_MUTED
+                            Colors.TEXT_ON_DARK_SOFT if mio else Colors.TEXT_MUTED
                         ),
                     ),
                 ],
@@ -157,22 +159,6 @@ async def view(page: ft.Page, state: AppState, chat_id: int) -> ft.View:
     if not mensajes.controls:
         mensajes.controls.append(vacio())
 
-    campo = ft.TextField(
-        hint_text="Escribe un mensaje",
-        border=ft.InputBorder.NONE,
-        filled=False,
-        dense=True,
-        expand=True,
-        max_length=MAX_MENSAJE,
-        multiline=True,
-        min_lines=1,
-        max_lines=5,
-        text_size=TextSizes.BODY,
-        text_style=ft.TextStyle(color=Colors.TEXT_BODY),
-        cursor_color=Colors.TEXT_PRIMARY,
-        counter="",
-    )
-
     async def enviar(e=None) -> None:
         texto = (campo.value or "").strip()
 
@@ -190,44 +176,14 @@ async def view(page: ft.Page, state: AppState, chat_id: int) -> ft.View:
 
         agregar(mensaje)
 
-        campo.value = ""
-        safe_update(campo, mensajes)
+        vaciar(campo)
+        safe_update(mensajes)
 
-    def limpiar(e) -> None:
-        campo.value = ""
-        safe_update(campo)
-
-    campo.on_submit = enviar
-
-    barra_escritura = ft.Container(
-        bgcolor=Colors.BACKGROUND,
-        padding=ft.Padding.symmetric(horizontal=Sizes.PAGE_PADDING, vertical=10),
-        content=ft.Container(
-            bgcolor="#D6D6D6",
-            border_radius=22,
-            padding=ft.Padding.only(left=16, right=4),
-            content=ft.Row(
-                vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=0,
-                controls=[
-                    campo,
-                    ft.IconButton(
-                        icon=ft.Icons.CLOSE,
-                        icon_size=18,
-                        icon_color=Colors.TEXT_PRIMARY,
-                        tooltip="Borrar lo escrito",
-                        on_click=limpiar,
-                    ),
-                    ft.IconButton(
-                        icon=ft.Icons.SEND,
-                        icon_size=20,
-                        icon_color=Colors.TEXT_PRIMARY,
-                        tooltip="Enviar",
-                        on_click=enviar,
-                    ),
-                ],
-            ),
-        ),
+    barra_escritura, campo = barra_de_escritura(
+        hint="Escribe un mensaje",
+        maximo=MAX_MENSAJE,
+        al_enviar=enviar,
+        tooltip_enviar=f"Enviar a {otro['username']}",
     )
 
     async def al_recibir(tipo: str, datos: Any) -> None:
@@ -255,56 +211,47 @@ async def view(page: ft.Page, state: AppState, chat_id: int) -> ft.View:
 
     state.vivo.suscribir("chat", al_recibir)
 
-    cabecera = ft.Container(
-        padding=ft.Padding.only(left=4, right=6, top=6, bottom=6),
+    titulo_tocable = ft.Container(
+        ink=True,
+        border_radius=Radius.SM,
+        on_click=ir_al_perfil,
+        tooltip=f"Ver el perfil de {otro['username']}",
+        padding=ft.Padding.symmetric(horizontal=Space.XS, vertical=Space.XXS),
         content=ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=0,
+            spacing=Space.XS + 2,
             controls=[
-                ft.IconButton(
-                    icon=ft.Icons.ARROW_BACK_IOS_NEW,
-                    icon_size=20,
-                    icon_color=Colors.TEXT_PRIMARY,
-                    tooltip="Volver",
-                    on_click=volver,
-                ),
                 ft.Container(
-                    expand=True,
-                    ink=True,
-                    border_radius=10,
-                    on_click=ir_al_perfil,
-                    tooltip=f"Ver el perfil de {otro['username']}",
-                    padding=ft.Padding.symmetric(horizontal=6, vertical=4),
-                    content=ft.Row(
-                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                        spacing=10,
-                        controls=[
-                            ft.Container(
-                                width=38,
-                                height=38,
-                                content=avatar_view(
-                                    api.absolute_url(otro.get("avatar_url")), 38
-                                ),
-                            ),
-                            ft.Text(
-                                otro["username"],
-                                size=TextSizes.SUBTITLE,
-                                color=Colors.TEXT_PRIMARY,
-                                weight=ft.FontWeight.W_600,
-                                font_family=Fonts.BODY,
-                            ),
-                        ],
+                    width=pantalla().avatar(38),
+                    height=pantalla().avatar(38),
+                    content=avatar_view(
+                        api.absolute_url(otro.get("avatar_url")),
+                        pantalla().avatar(38),
                     ),
                 ),
-                ft.IconButton(
-                    icon=ft.Icons.MORE_HORIZ,
-                    icon_size=26,
-                    icon_color=Colors.TEXT_PRIMARY,
-                    tooltip="Configuracion del chat",
-                    on_click=ir_a_configuracion,
+                ft.Text(
+                    otro["username"],
+                    size=pantalla().texto(TextSizes.SUBTITLE),
+                    color=Colors.TEXT_PRIMARY,
+                    font_family=Fonts.HEADING,
+                    max_lines=1,
+                    overflow=ft.TextOverflow.ELLIPSIS,
                 ),
             ],
         ),
+    )
+
+    cabecera = screen_header(
+        otro["username"],
+        volver,
+        principal=titulo_tocable,
+        acciones=[
+            boton_barra(
+                ft.Icons.MORE_HORIZ,
+                "Configuracion del chat",
+                ir_a_configuracion,
+            )
+        ],
     )
 
     return ft.View(
@@ -318,11 +265,10 @@ async def view(page: ft.Page, state: AppState, chat_id: int) -> ft.View:
                 expand=True,
                 controls=[
                     cabecera,
-                    ft.Divider(height=1, color=Colors.SURFACE),
                     ft.Container(
                         expand=True,
                         padding=ft.Padding.symmetric(
-                            horizontal=Sizes.PAGE_PADDING, vertical=12
+                            horizontal=pantalla().padding, vertical=12
                         ),
                         content=mensajes,
                     ),
