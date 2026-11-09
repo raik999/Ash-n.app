@@ -6,9 +6,12 @@ import flet as ft
 from services import auth_service
 from services.api_client import ApiError, api
 from services.realtime_service import ConexionEnVivo
+from style import responsive
 
 STORAGE_TOKEN_KEY = "ashun.token"
 LEGACY_RECENTS_KEY = "ashun.recents"
+
+STORAGE_LIGERO_KEY = "ashun.modo_ligero"
 
 class AppState:
     def __init__(self, page: ft.Page):
@@ -25,6 +28,28 @@ class AppState:
 
     async def start(self) -> None:
         await self._drop_legacy_recents()
+        await self.cargar_apariencia()
+
+    async def cargar_apariencia(self) -> str:
+        try:
+            guardado = await self.prefs.get(STORAGE_LIGERO_KEY)
+        except Exception:
+            guardado = None
+
+        valor = guardado if guardado in ("auto", "si", "no") else "auto"
+        responsive.elegir_ligero(valor)
+        return valor
+
+    async def guardar_apariencia(self, valor: str) -> None:
+        if valor not in ("auto", "si", "no"):
+            return
+
+        responsive.elegir_ligero(valor)
+
+        try:
+            await self.prefs.set(STORAGE_LIGERO_KEY, valor)
+        except Exception:
+            pass
 
     async def save_session(self, token: str, user: dict[str, Any]) -> None:
         self.user = user
