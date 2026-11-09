@@ -36,10 +36,8 @@ async def _registrarse(piloto: Piloto, datos: dict[str, str]) -> None:
 
 async def _iniciar_sesion(piloto: Piloto, datos: dict[str, str]) -> None:
     await piloto.ir("/login")
-
     await piloto.escribir("Nombre de Usuario o Mail", datos["username"])
     await piloto.escribir("Contraseña", datos["password"])
-
     await piloto.tocar("Iniciar Sesion")
 
     if piloto.ruta != "/profile":
@@ -84,7 +82,6 @@ async def recorrido_onboarding(piloto: Piloto, sufijo: str = "") -> dict[str, An
         await piloto.escribir("DD", DIA)
         await piloto.escribir("MM", MES)
         await piloto.escribir("AAAA", ANIO)
-
         await piloto.tocar("Listo")
 
         if piloto.ruta != "/onboarding/tags":

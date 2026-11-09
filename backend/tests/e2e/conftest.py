@@ -2,6 +2,7 @@ import json
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 
 from pathlib import Path
@@ -46,6 +47,20 @@ def servidor(base_de_pruebas):
     entorno["PORT"] = str(puerto)
     entorno["DEBUG"] = "false"
 
+    registro = tempfile.NamedTemporaryFile(
+        mode="w",
+        prefix="ashun_uvicorn_",
+        suffix=".log",
+        delete=False,
+    )
+
+    def leer_registro() -> str:
+        try:
+            with open(registro.name, encoding="utf-8", errors="replace") as archivo:
+                return archivo.read()
+        except OSError as error:
+            return f"(no se pudo leer el registro del servidor: {error})"
+
     proceso = subprocess.Popen(
         [
             sys.executable,
@@ -56,12 +71,13 @@ def servidor(base_de_pruebas):
             "127.0.0.1",
             "--port",
             str(puerto),
+            "--log-level",
+            "warning",
         ],
         cwd=CARPETA_SRC,
         env=entorno,
-        stdout=subprocess.PIPE,
+        stdout=registro,
         stderr=subprocess.STDOUT,
-        text=True,
     )
 
     base_url = f"http://127.0.0.1:{puerto}"
@@ -71,8 +87,9 @@ def servidor(base_de_pruebas):
 
     while time.monotonic() - inicio < 30:
         if proceso.poll() is not None:
-            salida = proceso.stdout.read() if proceso.stdout else ""
-            pytest.fail(f"El servidor no arranco.\n\nSalida de uvicorn:\n{salida}")
+            pytest.fail(
+                f"El servidor no arranco.\n\nSalida de uvicorn:\n{leer_registro()}"
+            )
 
         try:
             respuesta = httpx.get(f"{base_url}/health", timeout=1.0)
@@ -86,6 +103,7 @@ def servidor(base_de_pruebas):
         proceso.terminate()
         pytest.fail(
             f"El servidor no respondio en 30 segundos. Ultimo error: {ultimo_error}"
+            f"\n\nSalida de uvicorn:\n{leer_registro()}"
         )
 
     yield base_url
@@ -96,6 +114,9 @@ def servidor(base_de_pruebas):
     except subprocess.TimeoutExpired:
         proceso.kill()
         proceso.wait()
+
+    registro.close()
+    Path(registro.name).unlink(missing_ok=True)
 
 @pytest.fixture
 def api(servidor):
@@ -177,8 +198,8 @@ def _informe(resultado: dict) -> str:
 
 @pytest.fixture(autouse=True)
 def base_limpia_e2e(servidor):
-    
     from sqlalchemy import text
+
     from config.database import engine
 
     tablas = [
