@@ -1,174 +1,122 @@
-import pytest
+def test_el_recorrido_de_validaciones_completo_funciona(recorrido):
+    resultado = recorrido("validaciones")
 
-EMAIL = "nuevo.artista@ubiobio.cl"
-USERNAME = "nuevoartista"
-PASSWORD = "Secreta123"
-DESCRIPCION = "Mi primera obra en Ashun, pintada este verano"
+    assert resultado["ok"] is True
 
-def test_register_login_and_create_a_post(api):
-    registro = api.post(
-        "/api/auth/register",
-        json={
-            "email": EMAIL,
-            "name": "Artista Nuevo",
-            "username": USERNAME,
-            "password": PASSWORD,
-            "confirm_password": PASSWORD,
-        },
+    pasos = [paso["nombre"] for paso in resultado["pasos"]]
+    assert pasos == [
+        "El formulario rechaza un correo mal escrito",
+        "Rechaza una contrasena de menos de 6 caracteres",
+        "Rechaza dos contrasenas que no coinciden",
+        "Rechaza un nombre de usuario de menos de 3 caracteres",
+        "Con todo correcto, la cuenta se crea",
+        "Cerrar sesion",
+        "El login rechaza una contrasena incorrecta",
+        "El login rechaza un usuario que no existe",
+        "Con las credenciales correctas, entra",
+        "Crear la primera publicacion",
+        "No se puede registrar el mismo correo dos veces",
+    ]
+
+    assert all(paso["estado"] == "ok" for paso in resultado["pasos"])
+
+def test_los_rechazos_dejan_la_app_donde_estaba(recorrido):
+    resultado = recorrido("validaciones")
+    rutas = resultado["rutas"]
+
+    assert rutas.count("/register") == 2, (
+        f"Hubo 4 intentos de registro rechazados y no deberian haber navegado "
+        f"a ningun lado.\nRutas: {rutas}"
     )
 
-    assert registro.status_code == 201, registro.text
+    assert rutas.index("/profile") < rutas.index("/post/new")
 
-    assert "access_token" in registro.json()
-    assert registro.json()["user"]["username"] == USERNAME
-
-    assert "password" not in registro.json()["user"]
-    assert "password_hash" not in registro.json()["user"]
+def test_solo_quedo_un_usuario_creado(recorrido, api):
+    resultado = recorrido("validaciones")
+    usuario = resultado["datos"]["usuario"]
 
     login = api.post(
         "/api/auth/login",
-        json={"identifier": EMAIL, "password": PASSWORD},
+        json={"identifier": usuario["username"], "password": usuario["password"]},
     )
-
     assert login.status_code == 200, login.text
+    api.headers["Authorization"] = f"Bearer {login.json()['access_token']}"
 
-    token = login.json()["access_token"]
-    assert token
+    def buscar(prefijo: str) -> list[str]:
+        respuesta = api.get("/api/users", params={"q": prefijo, "limit": 50})
+        assert respuesta.status_code == 200, respuesta.text
+        return sorted(u["username"] for u in respuesta.json())
 
-    api.headers["Authorization"] = f"Bearer {token}"
+    assert buscar("rai") == [usuario["username"]]
 
-    yo = api.get("/api/auth/me")
-    assert yo.status_code == 200, yo.text
-    assert yo.json()["username"] == USERNAME
+    assert buscar("otro") == []
 
-    borrador = api.post(
-        "/api/posts",
-        json={"title": "Mi primera obra", "description": DESCRIPCION},
-    )
-
-    assert borrador.status_code == 201, borrador.text
-    post_id = borrador.json()["id"]
-
-    publicada = api.post(f"/api/posts/{post_id}/publish")
-    assert publicada.status_code == 200, publicada.text
-
-    perfil = api.get(f"/api/users/{USERNAME}/posts")
-    assert perfil.status_code == 200, perfil.text
-
-    publicaciones = perfil.json()
-    assert len(publicaciones) == 1
-    assert publicaciones[0]["id"] == post_id
-    assert publicaciones[0]["title"] == "Mi primera obra"
-
-def test_the_login_also_works_with_the_username(api):
-    api.post(
-        "/api/auth/register",
-        json={
-            "email": EMAIL,
-            "name": "Artista Nuevo",
-            "username": USERNAME,
-            "password": PASSWORD,
-            "confirm_password": PASSWORD,
-        },
-    )
+def test_el_usuario_quedo_bien_creado(recorrido, api):
+    resultado = recorrido("validaciones")
+    usuario = resultado["datos"]["usuario"]
 
     login = api.post(
         "/api/auth/login",
-        json={"identifier": USERNAME, "password": PASSWORD},
+        json={"identifier": usuario["email"], "password": usuario["password"]},
     )
-
     assert login.status_code == 200, login.text
-    assert login.json()["user"]["email"] == EMAIL
 
-def test_the_login_ignores_capital_letters_in_the_email(api):
-    api.post(
-        "/api/auth/register",
-        json={
-            "email": EMAIL,
-            "name": "Artista Nuevo",
-            "username": USERNAME,
-            "password": PASSWORD,
-            "confirm_password": PASSWORD,
-        },
+    perfil = login.json()["user"]
+    assert perfil["username"] == usuario["username"]
+    assert perfil["name"] == usuario["name"]
+    assert perfil["email"] == usuario["email"]
+
+    assert "password" not in perfil
+    assert "password_hash" not in perfil
+
+def test_la_contrasena_equivocada_sigue_sin_servir(recorrido, api):
+    resultado = recorrido("validaciones")
+    usuario = resultado["datos"]["usuario"]
+
+    mala = api.post(
+        "/api/auth/login",
+        json={"identifier": usuario["username"], "password": "ClaveEquivocada999"},
     )
+    inexistente = api.post(
+        "/api/auth/login",
+        json={"identifier": "no.existe.nadie", "password": usuario["password"]},
+    )
+
+    assert mala.status_code == 401
+    assert inexistente.status_code == 401
+    assert mala.json()["detail"] == inexistente.json()["detail"]
+
+def test_la_publicacion_quedo_publicada(recorrido, api):
+    resultado = recorrido("validaciones")
+    datos = resultado["datos"]
+    usuario = datos["usuario"]
+
+    publicaciones = api.get(f"/api/users/{usuario['username']}/posts")
+
+    assert publicaciones.status_code == 200, publicaciones.text
+    assert len(publicaciones.json()) == 1
+
+    post_id = publicaciones.json()[0]["id"]
+    publicacion = api.get(f"/api/posts/{post_id}").json()
+
+    assert publicacion["title"] == datos["titulo"]
+    assert publicacion["description"] == datos["descripcion"]
+
+def test_este_recorrido_no_toca_el_perfil_ni_interactua(recorrido, api):
+    resultado = recorrido("validaciones")
+    usuario = resultado["datos"]["usuario"]
 
     login = api.post(
         "/api/auth/login",
-        json={"identifier": EMAIL.upper(), "password": PASSWORD},
+        json={"identifier": usuario["username"], "password": usuario["password"]},
     )
+    api.headers["Authorization"] = f"Bearer {login.json()['access_token']}"
 
-    assert login.status_code == 200, login.text
+    perfil = api.get("/api/auth/me").json()
+    assert perfil["birthdate"] is None
+    assert perfil["bio"] is None
+    assert perfil["tipo"] == []
 
-def test_you_cannot_create_a_post_without_logging_in(api):
-    respuesta = api.post("/api/posts", json={"description": DESCRIPCION})
-    assert respuesta.status_code == 401
-
-def test_the_same_email_cannot_register_twice(api):
-    datos = {
-        "email": EMAIL,
-        "name": "Artista Nuevo",
-        "username": USERNAME,
-        "password": PASSWORD,
-        "confirm_password": PASSWORD,
-    }
-
-    assert api.post("/api/auth/register", json=datos).status_code == 201
-
-    datos_repetidos = dict(datos, username="otronombre")
-    respuesta = api.post("/api/auth/register", json=datos_repetidos)
-
-    assert respuesta.status_code == 409
-    assert "correo" in respuesta.json()["detail"]
-
-@pytest.mark.parametrize(
-    "identifier, password",
-    [
-        (EMAIL, "ContrasenaEquivocada"),
-        ("no.existe@ubiobio.cl", PASSWORD),
-    ],
-)
-def test_a_failed_login_returns_401(api, identifier, password):
-    api.post(
-        "/api/auth/register",
-        json={
-            "email": EMAIL,
-            "name": "Artista Nuevo",
-            "username": USERNAME,
-            "password": PASSWORD,
-            "confirm_password": PASSWORD,
-        },
-    )
-
-    respuesta = api.post(
-        "/api/auth/login", json={"identifier": identifier, "password": password}
-    )
-
-    assert respuesta.status_code == 401
-
-def test_a_post_with_no_content_never_becomes_visible(api):
-    registro = api.post(
-        "/api/auth/register",
-        json={
-            "email": EMAIL,
-            "name": "Artista Nuevo",
-            "username": USERNAME,
-            "password": PASSWORD,
-            "confirm_password": PASSWORD,
-        },
-    )
-    api.headers["Authorization"] = f"Bearer {registro.json()['access_token']}"
-
-    borrador = api.post("/api/posts", json={})
-    assert borrador.status_code == 201
-
-    publicar = api.post(f"/api/posts/{borrador.json()['id']}/publish")
-    assert publicar.status_code == 422
-
-    mio = api.get(f"/api/users/{USERNAME}/posts")
-    assert len(mio.json()) == 1
-
-    del api.headers["Authorization"]
-    de_visita = api.get(f"/api/users/{USERNAME}/posts")
-
-    assert de_visita.status_code == 200, de_visita.text
-    assert de_visita.json() == []
+    publicaciones = api.get(f"/api/users/{usuario['username']}/posts").json()
+    assert publicaciones[0]["likes_count"] == 0
+    assert publicaciones[0]["comments_count"] == 0
