@@ -2,7 +2,6 @@ import json
 import socket
 import subprocess
 import sys
-import tempfile
 import time
 
 from pathlib import Path
@@ -36,7 +35,7 @@ def python_del_frontend() -> str:
     return sys.executable
 
 @pytest.fixture(scope="session")
-def servidor(base_de_pruebas):
+def servidor(base_de_pruebas, tmp_path_factory):
     puerto = puerto_libre()
 
     import os
@@ -47,16 +46,19 @@ def servidor(base_de_pruebas):
     entorno["PORT"] = str(puerto)
     entorno["DEBUG"] = "false"
 
-    registro = tempfile.NamedTemporaryFile(
-        mode="w",
-        prefix="ashun_uvicorn_",
-        suffix=".log",
-        delete=False,
-    )
+    carpeta_registro = tmp_path_factory.mktemp("ashun_servidor")
+    ruta_registro = carpeta_registro / "uvicorn.log"
+
+    registro = open(ruta_registro, "w", encoding="utf-8", errors="replace")
 
     def leer_registro() -> str:
         try:
-            with open(registro.name, encoding="utf-8", errors="replace") as archivo:
+            registro.flush()
+        except (ValueError, OSError):
+            pass
+
+        try:
+            with open(ruta_registro, encoding="utf-8", errors="replace") as archivo:
                 return archivo.read()
         except OSError as error:
             return f"(no se pudo leer el registro del servidor: {error})"
@@ -88,7 +90,8 @@ def servidor(base_de_pruebas):
     while time.monotonic() - inicio < 30:
         if proceso.poll() is not None:
             pytest.fail(
-                f"El servidor no arranco.\n\nSalida de uvicorn:\n{leer_registro()}"
+                f"El servidor no arranco.\n\n"
+                f"Registro: {ruta_registro}\n\n{leer_registro()}"
             )
 
         try:
@@ -103,7 +106,7 @@ def servidor(base_de_pruebas):
         proceso.terminate()
         pytest.fail(
             f"El servidor no respondio en 30 segundos. Ultimo error: {ultimo_error}"
-            f"\n\nSalida de uvicorn:\n{leer_registro()}"
+            f"\n\nRegistro: {ruta_registro}\n\n{leer_registro()}"
         )
 
     yield base_url
@@ -116,7 +119,6 @@ def servidor(base_de_pruebas):
         proceso.wait()
 
     registro.close()
-    Path(registro.name).unlink(missing_ok=True)
 
 @pytest.fixture
 def api(servidor):
