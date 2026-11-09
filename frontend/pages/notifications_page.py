@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from functools import partial
 from typing import Any
 
@@ -49,7 +48,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
             ink=True,
             border_radius=6,
             padding=ft.Padding.symmetric(horizontal=4, vertical=1),
-            on_click=partial(_tocar, abrir_perfil, usuario["username"]),
+            on_click=partial(abrir_perfil, usuario["username"]),
             tooltip=f"Ver el perfil de {usuario['username']}",
             content=ft.Text(
                 usuario["username"],
@@ -94,7 +93,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
             border_radius=12,
             padding=ft.Padding.symmetric(horizontal=12, vertical=10),
             ink=True,
-            on_click=partial(_tocar, abrir_post, aviso["post_id"]),
+            on_click=partial(abrir_post, aviso["post_id"]),
             tooltip="Ver la publicacion",
             content=ft.Row(
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -105,7 +104,8 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                         height=44,
                         ink=True,
                         border_radius=22,
-                        on_click=partial(_tocar, abrir_perfil, usuario["username"]),
+                        on_click=partial(abrir_perfil, usuario["username"]),
+                        tooltip=f"Ver el perfil de {usuario['username']}",
                         content=avatar_view(
                             api.absolute_url(usuario.get("avatar_url")), 44
                         ),
@@ -199,6 +199,3 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
             )
         ],
     )
-
-def _tocar(accion, argumento, evento) -> Any:
-    return accion(argumento)
