@@ -25,6 +25,8 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_database() -> None:
     from entities.base import Base
+    from entities.chat import Chat
+    from entities.message import Message
     from entities.post import Post
     from entities.post_comment import PostComment
     from entities.post_file import PostFile
