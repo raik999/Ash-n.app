@@ -103,9 +103,33 @@ async def recorrido_onboarding(piloto: Piloto, sufijo: str = "") -> dict[str, An
     async with piloto.paso("Crear la cuenta"):
         await _registrarse(piloto, datos)
 
-    async with piloto.paso("La fecha de nacimiento rechaza lo imposible"):
+    async with piloto.paso("La fecha de nacimiento es obligatoria y tiene que ser valida"):
         piloto.exigir_texto("Ingresa tu fecha de nacimiento")
+
+        piloto.exigir_texto("al menos 13")
+
         piloto.limpiar_avisos()
+
+        await piloto.tocar("Listo")
+
+        if not piloto.hubo_aviso("Completa el dia"):
+            raise AssertionError(
+                f"Dejar la fecha vacia deberia rechazarse: es obligatoria. "
+                f"Avisos: {piloto.avisos()}"
+            )
+        _sigue_en(piloto, "/onboarding/birthdate", "La fecha no se puede omitir")
+
+        piloto.limpiar_avisos()
+
+        await piloto.escribir("DD", "03")
+        await piloto.escribir("MM", "05")
+        await piloto.tocar("Listo")
+
+        if not piloto.hubo_aviso("Completa el dia"):
+            raise AssertionError(
+                f"Una fecha a medias deberia rechazarse. Avisos: {piloto.avisos()}"
+            )
+        _sigue_en(piloto, "/onboarding/birthdate", "Falta el anio")
 
         await piloto.escribir("DD", "31")
         await piloto.escribir("MM", "02")
