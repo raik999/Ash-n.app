@@ -6,7 +6,8 @@ def test_el_onboarding_completo_funciona(recorrido):
     pasos = [paso["nombre"] for paso in resultado["pasos"]]
     assert pasos == [
         "Crear la cuenta",
-        "Escribir la fecha de nacimiento",
+        "La fecha de nacimiento rechaza lo imposible",
+        "Escribir una fecha valida",
         "Elegir las especialidades",
         "Omitir la foto de perfil",
         "Ver el perfil ya armado",
@@ -70,3 +71,18 @@ def test_el_onboarding_no_crea_publicaciones(recorrido, api):
 
     assert publicaciones.status_code == 200, publicaciones.text
     assert publicaciones.json() == []
+
+def test_la_fecha_invalida_no_queda_guardada(recorrido, api):
+    resultado = recorrido("onboarding")
+    datos = resultado["datos"]
+    usuario = datos["usuario"]
+
+    login = api.post(
+        "/api/auth/login",
+        json={"identifier": usuario["username"], "password": usuario["password"]},
+    )
+    api.headers["Authorization"] = f"Bearer {login.json()['access_token']}"
+
+    perfil = api.get("/api/auth/me").json()
+
+    assert perfil["birthdate"] == datos["nacimiento"]
