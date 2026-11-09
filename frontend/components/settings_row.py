@@ -3,9 +3,8 @@ from typing import Callable
 
 import flet as ft
 
-from style.theme import Colors, TextSizes
-
-ICON_BG = "#E6E6E6"
+from style.responsive import pantalla
+from style.theme import Colors, Fonts, Radius, Sizes, Space, TextSizes
 
 def settings_row(
     icon: str,
@@ -16,43 +15,61 @@ def settings_row(
     enabled: bool = True,
     danger: bool = False,
     show_chevron: bool = True,
+    subtitulo: str | None = None,
 ) -> ft.Container:
+    medidas = pantalla()
+
     if danger:
         circle_bg = Colors.BRAND_RED
         icon_color = Colors.TEXT_ON_DARK
         text_color = Colors.BRAND_RED
     elif enabled:
-        circle_bg = ICON_BG
+        circle_bg = Colors.SURFACE_STRONG
         icon_color = Colors.TEXT_PRIMARY
         text_color = Colors.TEXT_BODY
     else:
-        circle_bg = "#F0F0F0"
-        icon_color = Colors.TEXT_MUTED
-        text_color = Colors.TEXT_MUTED
+        circle_bg = Colors.DISABLED_BG
+        icon_color = Colors.DISABLED_FG
+        text_color = Colors.DISABLED_FG
 
-    if trailing is None and show_chevron and not danger:
+    if trailing is None and show_chevron and not danger and on_click is not None:
         trailing = ft.Icon(
             ft.Icons.CHEVRON_RIGHT,
-            size=22,
-            color=Colors.TEXT_MUTED if enabled else "#D5D5D5",
+            size=Sizes.ICON_MD,
+            color=Colors.TEXT_MUTED if enabled else Colors.DISABLED_FG,
+        )
+
+    textos: list[ft.Control] = [
+        label
+        if isinstance(label, ft.Control)
+        else ft.Text(
+            label,
+            size=medidas.texto(TextSizes.BODY),
+            color=text_color,
+        )
+    ]
+
+    if subtitulo:
+        textos.append(
+            ft.Text(
+                subtitulo,
+                size=medidas.texto(TextSizes.SMALL),
+                color=Colors.TEXT_MUTED if enabled else Colors.DISABLED_FG,
+            )
         )
 
     controls: list[ft.Control] = [
         ft.Container(
-            content=ft.Icon(icon, size=20, color=icon_color),
-            width=38,
-            height=38,
+            content=ft.Icon(icon, size=Sizes.ICON_SM + 2, color=icon_color),
+            width=40,
+            height=40,
             bgcolor=circle_bg,
-            border_radius=19,
+            border_radius=Radius.PILL,
             alignment=ft.Alignment.CENTER,
         ),
         ft.Container(
             expand=True,
-            content=(
-                label
-                if isinstance(label, ft.Control)
-                else ft.Text(label, size=TextSizes.BODY, color=text_color)
-            ),
+            content=ft.Column(spacing=1, tight=True, controls=textos),
         ),
     ]
 
@@ -60,48 +77,128 @@ def settings_row(
         controls.append(trailing)
 
     return ft.Container(
-        content=ft.Row(controls=controls, spacing=14, vertical_alignment=ft.CrossAxisAlignment.CENTER),
-        padding=ft.Padding.symmetric(horizontal=4, vertical=10),
-        on_click=on_click,
-        ink=on_click is not None,
-        border_radius=8,
+        content=ft.Row(
+            controls=controls,
+            spacing=Space.SM + 2,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        ),
+        height=Sizes.TOUCH_MIN + 8,
+        padding=ft.Padding.symmetric(horizontal=Space.XS),
+        on_click=on_click if enabled else None,
+        ink=on_click is not None and enabled,
+        border_radius=Radius.SM,
     )
 
 def section_title(text: str) -> ft.Container:
+    medidas = pantalla()
+
     return ft.Container(
-        content=ft.Text(text, size=TextSizes.SUBTITLE, color=Colors.TEXT_PRIMARY),
-        padding=ft.Padding.only(top=18, bottom=6, left=4),
+        content=ft.Text(
+            text,
+            size=medidas.texto(TextSizes.LABEL),
+            color=Colors.TEXT_MUTED,
+            weight=ft.FontWeight.W_600,
+            style=ft.TextStyle(letter_spacing=0.6),
+        ),
+        padding=ft.Padding.only(top=Space.LG, bottom=Space.XS, left=Space.XS),
     )
 
-def screen_header(title: str, on_back: Callable) -> ft.Container:
+def screen_header(
+    title: str,
+    on_back: Callable,
+    *,
+    acciones: list[ft.Control] | None = None,
+    principal: ft.Control | None = None,
+    con_linea: bool = True,
+) -> ft.Container:
+    medidas = pantalla()
+
+    derecha: list[ft.Control] = list(acciones or [])
+    if not derecha:
+        derecha = [ft.Container(width=Sizes.TOUCH_MIN)]
+
+    centro = principal or ft.Text(
+        title,
+        size=medidas.texto(TextSizes.SUBTITLE + 2),
+        color=Colors.TEXT_PRIMARY,
+        font_family=Fonts.HEADING,
+        text_align=ft.TextAlign.CENTER,
+        max_lines=1,
+        overflow=ft.TextOverflow.ELLIPSIS,
+    )
+
+    fila = ft.Row(
+        vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        spacing=0,
+        controls=[
+            ft.IconButton(
+                icon=ft.Icons.ARROW_BACK_IOS_NEW,
+                icon_size=Sizes.ICON_SM,
+                icon_color=Colors.TEXT_PRIMARY,
+                tooltip="Volver",
+                on_click=on_back,
+                width=Sizes.TOUCH_MIN,
+                height=Sizes.TOUCH_MIN,
+            ),
+            ft.Container(expand=True, content=centro),
+            *derecha,
+        ],
+    )
+
+    controles: list[ft.Control] = [fila]
+    if con_linea:
+        controles.append(
+            ft.Divider(height=1, thickness=1, color=Colors.DIVIDER)
+        )
+
     return ft.Container(
-        content=ft.Column(
-            spacing=0,
+        content=ft.Column(spacing=0, controls=controles),
+        padding=ft.Padding.only(top=Space.XXS),
+    )
+
+def encabezado_principal(
+    titulo: str,
+    *,
+    acciones: list[ft.Control] | None = None,
+) -> ft.Container:
+    medidas = pantalla()
+
+    return ft.Container(
+        padding=ft.Padding.only(
+            left=medidas.padding,
+            right=Space.XS,
+            top=Space.SM,
+            bottom=Space.XS,
+        ),
+        content=ft.Row(
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
             controls=[
-                ft.Row(
-                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                    controls=[
-                        ft.IconButton(
-                            icon=ft.Icons.ARROW_BACK_IOS_NEW,
-                            icon_size=20,
-                            icon_color=Colors.TEXT_PRIMARY,
-                            tooltip="Volver",
-                            on_click=on_back,
-                        ),
-                        ft.Container(
-                            expand=True,
-                            content=ft.Text(
-                                title,
-                                size=22,
-                                color=Colors.TEXT_PRIMARY,
-                                text_align=ft.TextAlign.CENTER,
-                            ),
-                        ),
-                        ft.Container(width=48),
-                    ],
+                ft.Text(
+                    titulo,
+                    size=medidas.texto(TextSizes.HEADING + 2),
+                    color=Colors.TEXT_PRIMARY,
+                    font_family=Fonts.HEADING,
+                    style=ft.TextStyle(letter_spacing=-0.4),
                 ),
-                ft.Divider(height=1, thickness=1, color="#E4E4E4"),
+                *(acciones or []),
             ],
         ),
-        padding=ft.Padding.only(top=6),
+    )
+
+def boton_barra(
+    icon: str,
+    tooltip: str,
+    on_click: Callable | None = None,
+    *,
+    color: str | None = None,
+) -> ft.IconButton:
+    return ft.IconButton(
+        icon=icon,
+        icon_size=Sizes.ICON_MD,
+        icon_color=color or Colors.TEXT_PRIMARY,
+        tooltip=tooltip,
+        on_click=on_click,
+        width=Sizes.TOUCH_MIN,
+        height=Sizes.TOUCH_MIN,
     )

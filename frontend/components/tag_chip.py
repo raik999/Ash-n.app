@@ -3,12 +3,13 @@ from typing import Any, Callable
 
 import flet as ft
 
-from style.theme import Colors, TextSizes
+from style.responsive import duracion, pantalla
+from style.theme import Colors, Motion, Radius, Space, TextSizes
 
 def _chip_label(name: str, size: int = TextSizes.LABEL) -> ft.Text:
     return ft.Text(
         f"#{name}",
-        size=size,
+        size=pantalla().texto(size),
         color=Colors.TEXT_ON_DARK,
         weight=ft.FontWeight.W_500,
     )
@@ -25,12 +26,12 @@ def selectable_chip(
         content=_chip_label(tag["name"]),
         bgcolor=color,
         opacity=0.45 if selected else 1.0,
-        padding=ft.Padding.symmetric(horizontal=16, vertical=9),
-        border_radius=20,
+        padding=ft.Padding.symmetric(horizontal=Space.MD, vertical=Space.XS + 2),
+        border_radius=Radius.PILL,
         on_click=lambda e: on_toggle(tag),
         ink=True,
         tooltip=f"Tocar para {'quitar' if selected else 'agregar'}",
-        animate_opacity=150,
+        animate_opacity=duracion(Motion.FAST),
     )
 
 def removable_chip(
@@ -51,17 +52,19 @@ def removable_chip(
                         size=16,
                         color=Colors.BRAND_DARK,
                     ),
-                    bgcolor="#8A8A8A",
+                    bgcolor=Colors.CHIP_FALLBACK,
                     width=30,
                     height=30,
-                    border_radius=20,
+                    border_radius=Radius.PILL,
                     alignment=ft.Alignment.CENTER,
                 ),
                 ft.Container(
                     content=_chip_label(tag["name"]),
                     bgcolor=color,
-                    padding=ft.Padding.symmetric(horizontal=14, vertical=7),
-                    border_radius=20,
+                    padding=ft.Padding.symmetric(
+                        horizontal=Space.MD, vertical=Space.XS + 2
+                    ),
+                    border_radius=Radius.PILL,
                     margin=ft.Margin.only(left=-15),
                 ),
             ],
@@ -75,6 +78,6 @@ def display_chip(tag: dict[str, Any]) -> ft.Container:
     return ft.Container(
         content=_chip_label(tag["name"], size=TextSizes.SMALL + 1),
         bgcolor=tag.get("color") or Colors.CHIP_FALLBACK,
-        padding=ft.Padding.symmetric(horizontal=14, vertical=7),
-        border_radius=20,
+        padding=ft.Padding.symmetric(horizontal=Space.SM + 2, vertical=Space.XXS + 2),
+        border_radius=Radius.PILL,
     )

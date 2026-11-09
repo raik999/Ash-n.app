@@ -3,13 +3,14 @@ from __future__ import annotations
 import flet as ft
 
 from components.layout import safe_update
-from style.theme import Colors, Sizes, TextSizes
+from style.responsive import pantalla
+from style.theme import Colors, Sizes, Space, TextSizes
 
 def primary_button(text: str, on_click, *, width: int | None = None) -> ft.Button:
     return ft.Button(
         content=ft.Text(
             text,
-            size=TextSizes.SUBTITLE,
+            size=pantalla().texto(TextSizes.SUBTITLE),
             color=Colors.TEXT_ON_DARK,
             weight=ft.FontWeight.W_500,
         ),
@@ -19,12 +20,15 @@ def primary_button(text: str, on_click, *, width: int | None = None) -> ft.Butto
         style=ft.ButtonStyle(
             bgcolor={
                 ft.ControlState.DEFAULT: Colors.BRAND_DARK,
-                ft.ControlState.DISABLED: Colors.TEXT_MUTED,
+                ft.ControlState.DISABLED: Colors.DISABLED_BG,
             },
-            color=Colors.TEXT_ON_DARK,
+            color={
+                ft.ControlState.DEFAULT: Colors.TEXT_ON_DARK,
+                ft.ControlState.DISABLED: Colors.DISABLED_FG,
+            },
             shape=ft.RoundedRectangleBorder(radius=Sizes.BUTTON_RADIUS),
             elevation=0,
-            padding=ft.Padding.symmetric(horizontal=20),
+            padding=ft.Padding.symmetric(horizontal=Space.LG),
         ),
     )
 
@@ -40,7 +44,7 @@ def link_button(text: str, on_click, *, bold: bool = True, size: int | None = No
         on_click=on_click,
         style=ft.ButtonStyle(
             overlay_color=ft.Colors.TRANSPARENT,
-            padding=ft.Padding.symmetric(horizontal=4, vertical=2),
+            padding=ft.Padding.symmetric(horizontal=Space.XS, vertical=Space.XS),
         ),
     )
 
@@ -72,9 +76,12 @@ def loading_button(text: str, on_click) -> tuple[ft.Button, callable]:
         style=ft.ButtonStyle(
             bgcolor={
                 ft.ControlState.DEFAULT: Colors.BRAND_DARK,
-                ft.ControlState.DISABLED: Colors.TEXT_MUTED,
+                ft.ControlState.DISABLED: Colors.DISABLED_BG,
             },
-            color=Colors.TEXT_ON_DARK,
+            color={
+                ft.ControlState.DEFAULT: Colors.TEXT_ON_DARK,
+                ft.ControlState.DISABLED: Colors.DISABLED_FG,
+            },
             shape=ft.RoundedRectangleBorder(radius=Sizes.BUTTON_RADIUS),
             elevation=0,
         ),

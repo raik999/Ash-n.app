@@ -1,6 +1,7 @@
 import flet as ft
 
-from style.theme import Colors, Fonts, TextSizes
+from style.responsive import pantalla
+from style.theme import Colors, Fonts, LineHeight, Space, TextSizes
 
 def brand_header(
     *,
@@ -15,15 +16,14 @@ def brand_header(
         controls=[
             ft.Text(
                 "Ashün",
-                size=size,
-                weight=ft.FontWeight.BOLD,
+                size=pantalla().texto(size),
                 color=Colors.TEXT_PRIMARY,
                 font_family=Fonts.HEADING,
             ),
             ft.Image(
                 src="logo.png",
-                width=logo_size,
-                height=logo_size,
+                width=pantalla().avatar(logo_size),
+                height=pantalla().avatar(logo_size),
                 fit=ft.BoxFit.CONTAIN,
             ),
         ],
@@ -33,11 +33,11 @@ def screen_title(text: str, subtitle: str | None = None) -> ft.Column:
     controls: list[ft.Control] = [
         ft.Text(
             text.upper(),
-            size=TextSizes.TITLE,
-            weight=ft.FontWeight.W_900,
+            size=pantalla().texto(TextSizes.TITLE),
+            weight=ft.FontWeight.W_700,
             color=Colors.TEXT_PRIMARY,
             font_family=Fonts.HEADING,
-            style=ft.TextStyle(height=1.05),
+            style=ft.TextStyle(height=LineHeight.TIGHT, letter_spacing=-0.5),
         )
     ]
 
@@ -45,9 +45,10 @@ def screen_title(text: str, subtitle: str | None = None) -> ft.Column:
         controls.append(
             ft.Text(
                 subtitle,
-                size=TextSizes.LABEL,
+                size=pantalla().texto(TextSizes.LABEL),
                 color=Colors.TEXT_MUTED,
+                style=ft.TextStyle(height=LineHeight.BODY),
             )
         )
 
-    return ft.Column(controls=controls, spacing=10)
+    return ft.Column(controls=controls, spacing=Space.XS + 2)

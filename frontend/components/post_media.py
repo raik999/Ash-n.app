@@ -6,6 +6,7 @@ import flet_audio as fa
 import flet_video as fv
 
 from services.api_client import api
+from style.responsive import pantalla
 from style.theme import Colors, TextSizes
 
 KIND_IMAGE = "image"
@@ -77,16 +78,18 @@ def grid_cell(post: dict[str, Any], on_click) -> ft.Container:
             post.get("description"), post.get("title"), pequena=True
         )
     elif preview["kind"] == KIND_IMAGE:
+        lado = pantalla().pixeles_para(int(pantalla().ancho / pantalla().columnas))
         contenido = ft.Image(
             src=api.absolute_url(preview["url"]),
             fit=ft.BoxFit.COVER,
             expand=True,
+            cache_width=lado,
             error_content=ft.Container(bgcolor=Colors.SURFACE, expand=True),
         )
     elif preview["kind"] == KIND_VIDEO:
-        contenido = _tarjeta(ft.Icons.PLAY_CIRCLE_OUTLINE, "Video", "#2B2B2B", pequena=True)
+        contenido = _tarjeta(ft.Icons.PLAY_CIRCLE_OUTLINE, "Video", Colors.MEDIA_VIDEO, pequena=True)
     else:
-        contenido = _tarjeta(ft.Icons.MUSIC_NOTE, "Audio", "#5B3DA8", pequena=True)
+        contenido = _tarjeta(ft.Icons.MUSIC_NOTE, "Audio", Colors.MEDIA_AUDIO, pequena=True)
 
     capas: list[ft.Control] = [ft.Container(content=contenido, expand=True)]
     if (post.get("files_count") or 0) > 1:
@@ -163,7 +166,7 @@ def audio_player(url: str) -> ft.Control:
     boton.on_click = alternar
 
     return ft.Container(
-        bgcolor="#5B3DA8",
+        bgcolor=Colors.MEDIA_AUDIO,
         alignment=ft.Alignment.CENTER,
         expand=True,
         content=ft.Column(
@@ -206,9 +209,9 @@ def media_item(archivo: dict[str, Any]) -> ft.Control:
     kind = archivo.get("kind")
 
     if es_local and kind == KIND_VIDEO:
-        return _tarjeta(ft.Icons.PLAY_CIRCLE_OUTLINE, "Video listo para subir", "#2B2B2B", False)
+        return _tarjeta(ft.Icons.PLAY_CIRCLE_OUTLINE, "Video listo para subir", Colors.MEDIA_VIDEO, False)
     if es_local and kind == KIND_AUDIO:
-        return _tarjeta(ft.Icons.MUSIC_NOTE, "Cancion lista para subir", "#5B3DA8", False)
+        return _tarjeta(ft.Icons.MUSIC_NOTE, "Cancion lista para subir", Colors.MEDIA_AUDIO, False)
 
     if kind == KIND_VIDEO:
         return fv.Video(
@@ -227,6 +230,7 @@ def media_item(archivo: dict[str, Any]) -> ft.Control:
         src=url,
         fit=ft.BoxFit.CONTAIN,
         expand=True,
+        cache_width=pantalla().pixeles_para(int(pantalla().ancho)),
         error_content=ft.Container(
             bgcolor=Colors.SURFACE,
             alignment=ft.Alignment.CENTER,
@@ -246,7 +250,7 @@ def media_carousel(archivos: list[dict[str, Any]], alto: int = 300) -> ft.Contro
                 width=7,
                 height=7,
                 border_radius=4,
-                bgcolor=Colors.BRAND_DARK if i == actual else "#C9C9C9",
+                bgcolor=Colors.BRAND_DARK if i == actual else Colors.SURFACE_STRONG,
             )
             for i in range(len(archivos))
         ]

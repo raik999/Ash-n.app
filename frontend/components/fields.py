@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import flet as ft
 
+from style.responsive import pantalla
 from style.theme import Colors, TextSizes
 
 def underline_field(
@@ -35,10 +36,19 @@ def underline_field(
                 side=ft.BorderSide(width=2, color=Colors.TEXT_PRIMARY)
             ),
         },
-        content_padding=ft.Padding.only(top=14, bottom=8),
-        label_style=ft.TextStyle(color=Colors.TEXT_MUTED, size=TextSizes.BODY),
-        text_style=ft.TextStyle(color=Colors.TEXT_BODY, size=TextSizes.BODY),
-        helper_style=ft.TextStyle(color=Colors.TEXT_MUTED, size=TextSizes.SMALL),
+        content_padding=ft.Padding.only(top=14, bottom=10),
+        label_style=ft.TextStyle(
+            color=Colors.TEXT_MUTED, size=pantalla().texto(TextSizes.BODY)
+        ),
+        text_style=ft.TextStyle(
+            color=Colors.TEXT_BODY, size=pantalla().texto(TextSizes.BODY)
+        ),
+        helper_style=ft.TextStyle(
+            color=Colors.TEXT_MUTED, size=pantalla().texto(TextSizes.SMALL)
+        ),
+        error_style=ft.TextStyle(
+            color=Colors.ERROR, size=pantalla().texto(TextSizes.SMALL)
+        ),
         cursor_color=Colors.TEXT_PRIMARY,
         on_submit=on_submit,
     )

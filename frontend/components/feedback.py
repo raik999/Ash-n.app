@@ -2,25 +2,30 @@ from __future__ import annotations
 
 import flet as ft
 
-from style.theme import Colors, Sizes, TextSizes
+from style.responsive import pantalla
+from style.theme import Colors, Radius, Sizes, Space, TextSizes
+
+def _aviso(mensaje: str, color: str, duracion: int) -> ft.SnackBar:
+    return ft.SnackBar(
+        content=ft.Text(
+            mensaje,
+            color=Colors.TEXT_ON_DARK,
+            size=pantalla().texto(TextSizes.BODY),
+        ),
+        bgcolor=color,
+        duration=duracion,
+        behavior=ft.SnackBarBehavior.FLOATING,
+        shape=ft.RoundedRectangleBorder(radius=Radius.MD),
+        margin=ft.Margin.only(
+            left=Space.MD, right=Space.MD, bottom=Sizes.NAV_BAR_HEIGHT + Space.XS
+        ),
+    )
 
 def show_error(page: ft.Page, message: str) -> None:
-    page.show_dialog(
-        ft.SnackBar(
-            content=ft.Text(message, color=Colors.TEXT_ON_DARK, size=TextSizes.BODY),
-            bgcolor=Colors.ERROR,
-            duration=4000,
-        )
-    )
+    page.show_dialog(_aviso(message, Colors.ERROR, 4000))
 
 def show_success(page: ft.Page, message: str) -> None:
-    page.show_dialog(
-        ft.SnackBar(
-            content=ft.Text(message, color=Colors.TEXT_ON_DARK, size=TextSizes.BODY),
-            bgcolor=Colors.SUCCESS,
-            duration=2500,
-        )
-    )
+    page.show_dialog(_aviso(message, Colors.SUCCESS, 2500))
 
 def confirm_dialog(
     page: ft.Page,
@@ -40,7 +45,12 @@ def confirm_dialog(
         await on_confirm(close)
 
     content_controls: list[ft.Control] = [
-        ft.Text(message, size=TextSizes.BODY, color=Colors.TEXT_BODY)
+        ft.Text(
+            message,
+            size=pantalla().texto(TextSizes.BODY),
+            color=Colors.TEXT_BODY,
+            style=ft.TextStyle(height=1.4),
+        )
     ]
     if extra is not None:
         content_controls.append(ft.Container(height=10))
@@ -48,9 +58,16 @@ def confirm_dialog(
 
     dialog = ft.AlertDialog(
         modal=True,
-        title=ft.Text(title, weight=ft.FontWeight.BOLD, color=Colors.TEXT_PRIMARY),
+        shape=ft.RoundedRectangleBorder(radius=Radius.MD),
+        bgcolor=Colors.BACKGROUND,
+        title=ft.Text(
+            title,
+            weight=ft.FontWeight.BOLD,
+            color=Colors.TEXT_PRIMARY,
+            size=pantalla().texto(TextSizes.SUBTITLE),
+        ),
         content=ft.Container(
-            width=320,
+            width=min(320, pantalla().ancho - 80),
             content=ft.Column(tight=True, spacing=0, controls=content_controls),
         ),
         actions=[
@@ -110,15 +127,19 @@ def avatar_view(url: str | None, size: int = Sizes.AVATAR_LARGE) -> ft.Control:
     if not url:
         return default_avatar(size)
 
+    pixeles = pantalla().pixeles_para(size)
+
     return ft.Container(
         width=size,
         height=size,
-        border_radius=size / 2,
+        border_radius=Radius.PILL,
         clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         content=ft.Image(
             src=url,
             width=size,
             height=size,
+            cache_width=pixeles,
+            cache_height=pixeles,
             fit=ft.BoxFit.COVER,
             error_content=default_avatar(size),
         ),
