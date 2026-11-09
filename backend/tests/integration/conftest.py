@@ -45,15 +45,35 @@ def autenticado(client):
     assert respuesta.status_code == 201, respuesta.text
 
     client.headers.update({"Authorization": f"Bearer {respuesta.json()['access_token']}"})
-
     client.usuario = respuesta.json()["user"]
 
     return client
 
 @pytest.fixture
+def crear_borrador(autenticado):
+    def crear(cliente, **campos):
+        respuesta = cliente.post("/api/posts", json=campos)
+        assert respuesta.status_code == 201, respuesta.text
+        return respuesta.json()
+
+    return crear
+
+@pytest.fixture
+def publicada(crear_borrador, autenticado):
+    borrador = crear_borrador(
+        autenticado,
+        title="Atardecer en el Bio Bio",
+        description="Un oleo que pinte mirando el rio desde el puente",
+    )
+
+    respuesta = autenticado.post(f"/api/posts/{borrador['id']}/publish")
+    assert respuesta.status_code == 200, respuesta.text
+
+    return respuesta.json()
+
+@pytest.fixture
 def otro_usuario(client):
     cliente = TestClient(app)
-
     respuesta = cliente.post(
         "/api/auth/register",
         json={
