@@ -50,12 +50,8 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
         month = (month_field.value or "").strip()
         year = (year_field.value or "").strip()
 
-        if not any([day, month, year]):
-            await page.push_route("/onboarding/tags")
-            return
-
         if not all([day, month, year]):
-            show_error(page, "Completa el dia, el mes y el año, o deja los tres vacios")
+            show_error(page, "Completa el dia, el mes y el año para continuar")
             return
 
         try:
@@ -87,7 +83,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                 vspace(50),
                 screen_title(
                     "Ingresa tu fecha de nacimiento",
-                    "Este paso lo puedes omitir dejando los campos vacios",
+                    "La necesitamos para comprobar que tienes al menos 13 años",
                 ),
                 vspace(50),
                 ft.Row(
