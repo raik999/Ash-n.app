@@ -4,7 +4,7 @@ from typing import Any
 
 import flet as ft
 
-from components.feedback import avatar_view
+from components.feedback import avatar_view, show_error
 from components.layout import bottom_nav
 from components.post_media import grid_cell
 from components.tag_chip import display_chip
@@ -20,6 +20,17 @@ async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
 
     async def go_back(e: ft.ControlEvent) -> None:
         await page.push_route("/search")
+
+    async def abrir_chat(e: ft.ControlEvent) -> None:
+        from services import chat_service
+
+        try:
+            chat = await chat_service.open_chat_with(username)
+        except ApiError as error:
+            show_error(page, error.message)
+            return
+
+        await page.push_route(f"/chat/{chat['id']}")
 
     if username == (state.user or {}).get("username"):
         await page.push_route("/profile")
@@ -90,20 +101,44 @@ async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
                     top=8,
                 ),
                 ft.Container(
-                    content=ft.Container(
-                        content=ft.Icon(
-                            ft.Icons.FAVORITE, size=22, color=Colors.TEXT_ON_DARK
-                        ),
-                        bgcolor=Colors.BRAND_DARK,
-                        width=78,
-                        height=38,
-                        border_radius=19,
-                        alignment=ft.Alignment.CENTER,
-                        on_click=None,
-                        tooltip="Seguir (proximamente)",
-                    ),
                     left=14,
                     bottom=4,
+                    content=ft.Row(
+                        spacing=10,
+                        tight=True,
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                        controls=[
+                            ft.Container(
+                                content=ft.Icon(
+                                    ft.Icons.FAVORITE,
+                                    size=22,
+                                    color=Colors.TEXT_ON_DARK,
+                                ),
+                                bgcolor=Colors.BRAND_DARK,
+                                width=78,
+                                height=38,
+                                border_radius=19,
+                                alignment=ft.Alignment.CENTER,
+                                on_click=None,
+                                tooltip="Seguir (proximamente)",
+                            ),
+                            ft.Container(
+                                content=ft.Icon(
+                                    ft.Icons.MARK_UNREAD_CHAT_ALT,
+                                    size=22,
+                                    color=Colors.TEXT_ON_DARK,
+                                ),
+                                bgcolor=Colors.BRAND_DARK,
+                                width=62,
+                                height=38,
+                                border_radius=19,
+                                alignment=ft.Alignment.CENTER,
+                                on_click=abrir_chat,
+                                ink=True,
+                                tooltip=f"Enviar un mensaje a {username}",
+                            ),
+                        ],
+                    ),
                 ),
             ]
         ),
