@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 from entities.post import MAX_TAGS_PER_POST
 from entities.post_comment import MAX_COMMENT_LENGTH
 from validations.user_validation import TagResponse, UserSummaryResponse
@@ -10,6 +10,13 @@ class PostFileResponse(BaseModel):
     kind: str
     url: str
     position: int
+
+    @computed_field
+    @property
+    def thumb_url(self) -> str | None:
+        from services.storage_service import url_de_miniatura
+
+        return url_de_miniatura(self.url)
 
     model_config = ConfigDict(from_attributes=True)
 
