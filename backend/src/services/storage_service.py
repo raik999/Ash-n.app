@@ -6,6 +6,12 @@ from pathlib import Path
 from config.settings import settings
 from middleware.error_middleware import ValidationError
 
+THUMB_LADO = 480
+
+THUMB_SUFIJO = "_thumb"
+
+THUMB_CALIDAD = 82
+
 ALLOWED_IMAGE_TYPES: dict[str, str] = {
     "image/jpeg": ".jpg",
     "image/jpg": ".jpg",
@@ -30,6 +36,58 @@ def _detect_image_type(content: bytes) -> str | None:
         return "image/webp"
 
     return None
+
+def ruta_de_miniatura(original: Path) -> Path:
+    return original.with_stem(original.stem + THUMB_SUFIJO)
+
+def crear_miniatura(original: Path) -> Path | None:
+    try:
+        from PIL import Image, ImageOps
+    except ImportError:
+        return None
+
+    destino = ruta_de_miniatura(original)
+
+    try:
+        with Image.open(original) as imagen:
+            imagen = ImageOps.exif_transpose(imagen)
+            imagen.thumbnail((THUMB_LADO, THUMB_LADO), Image.Resampling.LANCZOS)
+
+            if imagen.mode in ("RGBA", "LA", "P"):
+                fondo = Image.new("RGB", imagen.size, (255, 255, 255))
+                convertida = imagen.convert("RGBA")
+                fondo.paste(convertida, mask=convertida.split()[-1])
+                imagen = fondo
+            elif imagen.mode != "RGB":
+                imagen = imagen.convert("RGB")
+
+            imagen.save(destino, "JPEG", quality=THUMB_CALIDAD, optimize=True)
+    except Exception:
+        destino.unlink(missing_ok=True)
+        return None
+
+    return destino
+
+def url_de_miniatura(url: str | None) -> str | None:
+    if not url:
+        return None
+
+    nombre = Path(url).name
+    carpeta = settings.posts_dir if "/posts/" in url else settings.upload_dir
+
+    ruta = ruta_de_miniatura(carpeta / nombre)
+    if not ruta.is_file():
+        return None
+
+    return url.rsplit("/", 1)[0] + "/" + ruta.name
+
+def borrar_miniatura(url: str | None) -> None:
+    if not url:
+        return
+
+    nombre = Path(url).name
+    carpeta = settings.posts_dir if "/posts/" in url else settings.upload_dir
+    ruta_de_miniatura(carpeta / nombre).unlink(missing_ok=True)
 
 def save_avatar(user_id: int, filename: str, content_type: str, content: bytes) -> str:
     if len(content) == 0:
@@ -63,6 +121,8 @@ def save_avatar(user_id: int, filename: str, content_type: str, content: bytes) 
     with open(destination, "wb") as file_handle:
         file_handle.write(content)
 
+    crear_miniatura(destination)
+
     return f"/uploads/{safe_filename}"
 
 def delete_avatar(avatar_url: str) -> None:
@@ -74,6 +134,8 @@ def delete_avatar(avatar_url: str) -> None:
 
     if file_path.is_file():
         file_path.unlink(missing_ok=True)
+
+    borrar_miniatura(avatar_url)
 
 from entities.post_file import KIND_AUDIO, KIND_IMAGE, KIND_VIDEO
 
@@ -162,6 +224,9 @@ def save_post_file(post_id: int, content: bytes) -> tuple[str, str]:
     with open(destination, "wb") as file_handle:
         file_handle.write(content)
 
+    if kind == KIND_IMAGE:
+        crear_miniatura(destination)
+
     return f"/uploads/posts/{safe_filename}", kind
 
 def delete_post_file(url: str) -> None:
@@ -172,3 +237,5 @@ def delete_post_file(url: str) -> None:
 
     if file_path.is_file():
         file_path.unlink(missing_ok=True)
+
+    borrar_miniatura(url)
