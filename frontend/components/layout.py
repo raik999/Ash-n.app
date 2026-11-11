@@ -172,6 +172,9 @@ def bottom_nav(
         e.control.selected_index = selected
         e.control.update()
 
+    def icono(nombre: str) -> ft.Icon:
+        return ft.Icon(nombre, size=Sizes.ICON_LG, color=Colors.TEXT_PRIMARY)
+
     def globito() -> ft.Badge | None:
         if sin_leer <= 0:
             return None
@@ -189,14 +192,14 @@ def bottom_nav(
         height=Sizes.NAV_BAR_HEIGHT,
         on_change=on_change or handle_change,
         destinations=[
-            ft.NavigationBarDestination(icon=ft.Icons.HOME_OUTLINED, label="Inicio"),
-            ft.NavigationBarDestination(icon=ft.Icons.SEARCH, label="Buscar"),
+            ft.NavigationBarDestination(icono(ft.Icons.HOME_OUTLINED), label="Inicio"),
+            ft.NavigationBarDestination(icono(ft.Icons.SEARCH), label="Buscar"),
             ft.NavigationBarDestination(
-                icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
+                icono(ft.Icons.CHAT_BUBBLE_OUTLINE),
                 label="Mensajes",
                 badge=globito(),
             ),
-            ft.NavigationBarDestination(icon=ft.Icons.PERSON_OUTLINE, label="Perfil"),
+            ft.NavigationBarDestination(icono(ft.Icons.PERSON_OUTLINE), label="Perfil"),
         ],
     )
 
