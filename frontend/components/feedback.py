@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import flet as ft
 
+from services.api_client import api
 from style.responsive import pantalla
 from style.theme import Colors, Radius, Sizes, Space, TextSizes
 
@@ -121,6 +122,14 @@ def default_avatar(size: int = Sizes.AVATAR_LARGE) -> ft.Container:
                 ),
             ]
         ),
+    )
+
+def foto_de(usuario: dict | None) -> str | None:
+    if not usuario:
+        return None
+
+    return api.absolute_url(
+        usuario.get("avatar_thumb_url") or usuario.get("avatar_url")
     )
 
 def avatar_view(url: str | None, size: int = Sizes.AVATAR_LARGE) -> ft.Control:
