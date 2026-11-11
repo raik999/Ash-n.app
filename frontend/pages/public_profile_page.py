@@ -4,15 +4,16 @@ from typing import Any
 
 import flet as ft
 
-from components.feedback import avatar_view, show_error
-from components.layout import bottom_nav
+from components.feedback import avatar_view, foto_de, show_error
+from components.layout import bottom_nav, estado_vacio
+from components.profile_scroll import grilla_fija, perfil_desplazable
 from components.post_media import grid_cell
 from components.tag_chip import display_chip
 from context.app_state import AppState
 from services import post_service, user_service
 from services.api_client import ApiError, api
 from style.responsive import pantalla
-from style.theme import Colors, Fonts, Radius, Sizes, Space, TextSizes
+from style.theme import Colors, Fonts, LineHeight, Radius, Sizes, Space, TextSizes
 
 async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
     if not state.user:
@@ -84,7 +85,7 @@ async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
         content=ft.Stack(
             controls=[
                 ft.Container(
-                    content=avatar_view(api.absolute_url(profile.get("avatar_url")), 150),
+                    content=avatar_view(foto_de(profile), 150),
                     alignment=ft.Alignment.CENTER,
                     padding=ft.Padding.only(top=20),
                     width=10000,
@@ -162,106 +163,82 @@ async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
     async def abrir_publicacion(post_id: int) -> None:
         await page.push_route(f"/post/{post_id}")
 
-    def posts_grid() -> ft.Control:
+    RELLENO = Space.XS
+    ancho_grilla = pantalla().ancho - RELLENO * 2
+
+    def grilla_publicaciones() -> ft.Control:
         if not publicaciones:
-            return empty_tab(f"@{profile['username']} todavia no tiene publicaciones")
+            return estado_vacio(
+                ft.Icons.PHOTO_LIBRARY_OUTLINED,
+                "Todavia no hay publicaciones",
+                f"Cuando @{profile['username']} publique algo, va a aparecer aqui.",
+            )
 
-        return ft.GridView(
-            controls=[
-                grid_cell(pub, partial(abrir_publicacion, pub["id"]))
-                for pub in publicaciones
-            ],
-            runs_count=pantalla().columnas,
-            child_aspect_ratio=1.0,
-            spacing=Space.XXS + 2,
-            run_spacing=Space.XXS + 2,
-            padding=ft.Padding.all(6),
-            expand=True,
+        celdas = [
+            grid_cell(pub, partial(abrir_publicacion, pub["id"]))
+            for pub in publicaciones
+        ]
+        return grilla_fija(celdas, ancho_disponible=ancho_grilla)
+
+    def pestana_portafolios() -> ft.Control:
+        return estado_vacio(
+            ft.Icons.COLLECTIONS_OUTLINED,
+            "Todavia no hay portafolios",
+            f"@{profile['username']} aun no agrupo sus publicaciones.",
         )
-
-    def empty_tab(message: str) -> ft.Container:
-        return ft.Container(
-            alignment=ft.Alignment.CENTER,
-            padding=40,
-            content=ft.Text(message, size=TextSizes.BODY, color=Colors.TEXT_MUTED),
-        )
-
-    tabs = ft.Tabs(
-        selected_index=0,
-        length=2,
-        expand=True,
-        content=ft.Column(
-            spacing=0,
-            expand=True,
-            controls=[
-                ft.TabBar(
-                    tabs=[
-                        ft.Tab(label="Publicaciones"),
-                        ft.Tab(label="Portafolios"),
-                    ],
-                    label_color=Colors.TEXT_PRIMARY,
-                    unselected_label_color=Colors.TEXT_MUTED,
-                    indicator_color=Colors.BRAND_DARK,
-                    indicator_thickness=3,
-                    divider_color=ft.Colors.TRANSPARENT,
-                ),
-                ft.TabBarView(
-                    expand=True,
-                    controls=[
-                        posts_grid(),
-                        empty_tab("Todavia no tiene portafolios"),
-                    ],
-                ),
-            ],
-        ),
-    )
 
     bio = profile.get("bio")
+
+    bloque_superior = ft.Column(
+        spacing=0,
+        controls=[
+            header,
+            ft.Container(
+                padding=ft.Padding.only(
+                    left=pantalla().padding,
+                    right=pantalla().padding,
+                    top=Space.SM + 2,
+                    bottom=Space.MD,
+                ),
+                content=ft.Column(
+                    spacing=Space.XS + 2,
+                    controls=[
+                        ft.Text(
+                            profile.get("name") or "",
+                            size=pantalla().texto(TextSizes.HEADING + 2),
+                            color=Colors.TEXT_PRIMARY,
+                            font_family=Fonts.HEADING,
+                        ),
+                        ft.Text(
+                            f"@{profile.get('username', '')}",
+                            size=pantalla().texto(TextSizes.BODY),
+                            color=Colors.TEXT_MUTED,
+                        ),
+                        tags_row,
+                        ft.Text(
+                            bio or "Este artista todavia no escribio su presentacion.",
+                            size=pantalla().texto(TextSizes.BODY),
+                            color=Colors.TEXT_BODY if bio else Colors.TEXT_MUTED,
+                            style=ft.TextStyle(height=LineHeight.BODY),
+                        ),
+                    ],
+                ),
+            ),
+        ],
+    )
 
     return ft.View(
         route=f"/user/{username}",
         padding=0,
         spacing=0,
         bgcolor=Colors.BACKGROUND,
-        navigation_bar=bottom_nav(page, selected=1),
+        navigation_bar=bottom_nav(page, selected=1, sin_leer=state.chats_sin_leer),
         controls=[
-            ft.Column(
-                spacing=0,
-                expand=True,
-                controls=[
-                    header,
-                    ft.Container(
-                        padding=ft.Padding.symmetric(horizontal=pantalla().padding, vertical=14),
-                        content=ft.Column(
-                            spacing=10,
-                            controls=[
-                                ft.Text(
-                                    profile.get("name") or "",
-                                    size=26,
-                                    weight=ft.FontWeight.W_600,
-                                    color=Colors.TEXT_PRIMARY,
-                                    font_family=Fonts.HEADING,
-                                ),
-                                ft.Text(
-                                    f"@{profile.get('username', '')}",
-                                    size=TextSizes.BODY,
-                                    color=Colors.TEXT_MUTED,
-                                ),
-                                tags_row,
-                                ft.Text(
-                                    bio or "Este artista todavia no escribio su presentacion.",
-                                    size=TextSizes.BODY,
-                                    color=Colors.TEXT_BODY if bio else Colors.TEXT_MUTED,
-                                ),
-                            ],
-                        ),
-                    ),
-                    ft.Container(
-                        content=tabs,
-                        expand=True,
-                        padding=ft.Padding.symmetric(horizontal=8),
-                    ),
-                ],
+            perfil_desplazable(
+                encabezado=bloque_superior,
+                etiquetas=["Publicaciones", "Portafolios"],
+                contenidos=[grilla_publicaciones, pestana_portafolios],
+                relleno_horizontal=RELLENO,
             )
         ],
     )

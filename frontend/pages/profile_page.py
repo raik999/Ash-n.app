@@ -5,7 +5,8 @@ import flet as ft
 
 from components.feedback import avatar_view, show_error, show_success
 from components.fields import underline_field
-from components.layout import bottom_nav
+from components.layout import bottom_nav, estado_vacio
+from components.profile_scroll import grilla_fija, perfil_desplazable
 from components.post_media import grid_cell, new_post_cell
 from components.tag_chip import display_chip
 from context.app_state import AppState
@@ -151,111 +152,85 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
     async def crear_publicacion(e) -> None:
         await page.push_route("/post/new")
 
-    def posts_grid() -> ft.GridView:
-        tiles: list[ft.Control] = [new_post_cell(crear_publicacion)]
+    RELLENO = Space.XS
+    ancho_grilla = pantalla().ancho - RELLENO * 2
+
+    def grilla_publicaciones() -> ft.Control:
+        celdas: list[ft.Control] = [new_post_cell(crear_publicacion)]
 
         for publicacion in publicaciones:
-            tiles.append(
+            celdas.append(
                 grid_cell(publicacion, partial(abrir_publicacion, publicacion["id"]))
             )
 
-        return ft.GridView(
-            controls=tiles,
-            runs_count=pantalla().columnas,
-            child_aspect_ratio=1.0,
-            spacing=Space.XXS + 2,
-            run_spacing=Space.XXS + 2,
-            expand=True,
+        return grilla_fija(celdas, ancho_disponible=ancho_grilla)
+
+    def pestana_portafolios() -> ft.Control:
+        return estado_vacio(
+            ft.Icons.COLLECTIONS_OUTLINED,
+            "Todavia no tienes portafolios",
+            "Cuando agrupes publicaciones en portafolios, los vas a ver aqui.",
         )
 
-    def empty_tab(message: str) -> ft.Container:
-        return ft.Container(
-            alignment=ft.Alignment.CENTER,
-            padding=40,
-            content=ft.Text(message, size=TextSizes.BODY, color=Colors.TEXT_MUTED),
-        )
-
-    tabs = ft.Tabs(
-        selected_index=0,
-        length=2,
-        expand=True,
-        content=ft.Column(
-            spacing=0,
-            expand=True,
-            controls=[
-                ft.TabBar(
-                    tabs=[
-                        ft.Tab(label="Publicaciones"),
-                        ft.Tab(label="Portafolios"),
-                    ],
-                    label_color=Colors.TEXT_PRIMARY,
-                    unselected_label_color=Colors.TEXT_MUTED,
-                    indicator_color=Colors.BRAND_DARK,
-                    indicator_thickness=3,
-                    divider_color=ft.Colors.TRANSPARENT,
+    bloque_superior = ft.Column(
+        spacing=0,
+        controls=[
+            header,
+            ft.Container(
+                padding=ft.Padding.only(
+                    left=pantalla().padding,
+                    right=pantalla().padding,
+                    top=Space.SM + 2,
+                    bottom=Space.MD,
                 ),
-                ft.TabBarView(
-                    expand=True,
+                content=ft.Column(
+                    spacing=Space.XS + 2,
                     controls=[
-                        posts_grid(),
-                        empty_tab("Todavia no tienes portafolios"),
+                        ft.Text(
+                            user.get("name") or "",
+                            size=pantalla().texto(TextSizes.HEADING + 2),
+                            color=Colors.TEXT_PRIMARY,
+                            font_family=Fonts.HEADING,
+                        ),
+                        ft.Text(
+                            f"@{user.get('username', '')}",
+                            size=pantalla().texto(TextSizes.BODY),
+                            color=Colors.TEXT_MUTED,
+                        ),
+                        tags_row,
+                        ft.Row(
+                            vertical_alignment=ft.CrossAxisAlignment.START,
+                            controls=[
+                                ft.Container(expand=True, content=bio_text),
+                                ft.IconButton(
+                                    icon=ft.Icons.EDIT_SQUARE,
+                                    icon_color=Colors.BRAND_DARK,
+                                    icon_size=Sizes.ICON_MD,
+                                    width=Sizes.TOUCH_MIN,
+                                    height=Sizes.TOUCH_MIN,
+                                    tooltip="Editar presentación",
+                                    on_click=open_edit_dialog,
+                                ),
+                            ],
+                        ),
                     ],
                 ),
-            ],
-        ),
+            ),
+        ],
     )
 
     return ft.View(
         route="/profile",
         padding=0,
         spacing=0,
-        navigation_bar=bottom_nav(page, selected=3),
+        bgcolor=Colors.BACKGROUND,
+        navigation_bar=bottom_nav(page, selected=3, sin_leer=state.chats_sin_leer),
         controls=[
-            ft.Column(
-                spacing=0,
-                expand=True,
-                controls=[
-                    header,
-                    ft.Container(
-                        padding=ft.Padding.symmetric(horizontal=pantalla().padding, vertical=14),
-                        content=ft.Column(
-                            spacing=10,
-                            controls=[
-                                ft.Text(
-                                    user.get("name") or "",
-                                    size=26,
-                                    weight=ft.FontWeight.W_600,
-                                    color=Colors.TEXT_PRIMARY,
-                                    font_family=Fonts.HEADING,
-                                ),
-                                ft.Text(
-                                    f"@{user.get('username', '')}",
-                                    size=TextSizes.BODY,
-                                    color=Colors.TEXT_MUTED,
-                                ),
-                                tags_row,
-                                ft.Row(
-                                    vertical_alignment=ft.CrossAxisAlignment.START,
-                                    controls=[
-                                        ft.Container(expand=True, content=bio_text),
-                                        ft.IconButton(
-                                            icon=ft.Icons.EDIT_SQUARE,
-                                            icon_color=Colors.BRAND_DARK,
-                                            icon_size=24,
-                                            tooltip="Editar presentación",
-                                            on_click=open_edit_dialog,
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                    ),
-                    ft.Container(
-                        content=tabs,
-                        expand=True,
-                        padding=ft.Padding.symmetric(horizontal=8),
-                    ),
-                ],
+            perfil_desplazable(
+                encabezado=bloque_superior,
+                etiquetas=["Publicaciones", "Portafolios"],
+                contenidos=[grilla_publicaciones, pestana_portafolios],
+                relleno_horizontal=RELLENO,
             )
         ],
     )

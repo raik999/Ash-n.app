@@ -4,7 +4,7 @@ from typing import Any
 
 import flet as ft
 
-from components.feedback import avatar_view, show_error
+from components.feedback import avatar_view, foto_de, show_error
 from components.compose_bar import barra_de_escritura, vaciar
 from components.layout import safe_update
 from components.settings_row import screen_header
@@ -36,7 +36,7 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
             ft.Container(
                 width=26,
                 height=26,
-                content=avatar_view(api.absolute_url(autor.get("avatar_url")), 26),
+                content=avatar_view(foto_de(autor), 26),
             ),
             ft.Text(
                 autor["username"],

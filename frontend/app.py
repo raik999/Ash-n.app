@@ -3,6 +3,7 @@ from __future__ import annotations
 import traceback
 import flet as ft
 
+from components.layout import asegurar_zona
 from context.app_state import AppState
 from pages import (
     account_page,
@@ -24,31 +25,56 @@ from pages import (
     settings_page,
     tags_page,
 )
-from style.theme import Colors, app_theme
+from style import responsive
+from style.theme import Colors, Fonts, Space, TextSizes, app_theme
 
 FONTS = {
-    "Poppins": "https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Regular.ttf",
+    "Poppins": "fonts/Poppins-Regular.ttf",
+    "Poppins Medium": "fonts/Poppins-Medium.ttf",
+    "Poppins SemiBold": "fonts/Poppins-SemiBold.ttf",
+    "Poppins Bold": "fonts/Poppins-Bold.ttf",
 }
+
+RUTAS_RAIZ = {"/login", "/profile", "/search", "/chats"}
+
+def apilar(page: ft.Page, vista: ft.View) -> None:
+    asegurar_zona(vista)
+
+    ruta = vista.route
+
+    if ruta in RUTAS_RAIZ:
+        page.views.clear()
+    else:
+        rutas = [v.route for v in page.views]
+        if ruta in rutas:
+            del page.views[rutas.index(ruta) :]
+
+    page.views.append(vista)
+    page.update()
 
 def _vista_de_error(route: str, error: Exception) -> ft.View:
     detalle = traceback.format_exc()
 
     return ft.View(
         route=route,
-        padding=16,
+        padding=Space.MD,
         bgcolor=Colors.BACKGROUND,
         scroll=ft.ScrollMode.AUTO,
         controls=[
             ft.Text(
                 "Esta pantalla no se pudo abrir",
-                size=20,
+                size=TextSizes.SUBTITLE + 2,
                 weight=ft.FontWeight.BOLD,
                 color=Colors.BRAND_RED,
             ),
-            ft.Container(height=6),
-            ft.Text(f"Ruta: {route}", size=13, color=Colors.TEXT_MUTED),
-            ft.Text(f"{type(error).__name__}: {error}", size=13, color=Colors.TEXT_BODY),
-            ft.Container(height=10),
+            ft.Container(height=Space.XXS + 2),
+            ft.Text(f"Ruta: {route}", size=TextSizes.LABEL, color=Colors.TEXT_MUTED),
+            ft.Text(
+                f"{type(error).__name__}: {error}",
+                size=TextSizes.LABEL,
+                color=Colors.TEXT_BODY,
+            ),
+            ft.Container(height=Space.XS + 2),
             ft.Text(
                 detalle,
                 size=10,
@@ -61,8 +87,6 @@ def _vista_de_error(route: str, error: Exception) -> ft.View:
 
 async def main(page: ft.Page) -> None:
     page.title = "Ashün"
-    page.theme = app_theme()
-    page.theme_mode = ft.ThemeMode.LIGHT
     page.bgcolor = Colors.BACKGROUND
     page.padding = 0
     page.fonts = FONTS
@@ -73,12 +97,23 @@ async def main(page: ft.Page) -> None:
     page.window.min_height = 640
 
     state = AppState(page)
+
     await state.start()
+    medidas = responsive.medir(page)
+    page.theme = app_theme(medidas.ligero)
+    page.theme_mode = ft.ThemeMode.LIGHT
+
+    async def al_cambiar_tamano(e) -> None:
+        responsive.medir(page)
+
+    page.on_resize = al_cambiar_tamano
 
     async def route_change(e: ft.RouteChangeEvent) -> None:
         route = page.route
 
         state.vivo.limpiar_pantalla()
+
+        responsive.medir(page)
 
         routes = {
             "/login": lambda: login_page.view(page, state),
@@ -110,12 +145,13 @@ async def main(page: ft.Page) -> None:
             await page.push_route("/login")
             return
 
+        vista = None
+
         if route.startswith("/post/") and route != "/post/new":
             partes = route.strip("/").split("/")
             if len(partes) >= 2 and partes[1].isdigit():
                 post_id = int(partes[1])
                 seccion = partes[2] if len(partes) > 2 else ""
-
                 try:
                     if seccion == "comments":
                         vista = await comments_page.view(page, state, post_id)
@@ -128,17 +164,11 @@ async def main(page: ft.Page) -> None:
                 except Exception as error:
                     vista = _vista_de_error(route, error)
 
-                page.views.clear()
-                page.views.append(vista)
-                page.update()
-                return
-
-        if route.startswith("/chat/"):
+        elif route.startswith("/chat/"):
             partes = route.strip("/").split("/")
             if len(partes) >= 2 and partes[1].isdigit():
                 chat_id = int(partes[1])
                 seccion = partes[2] if len(partes) > 2 else ""
-
                 try:
                     if seccion == "settings":
                         vista = await chat_settings_page.view(page, state, chat_id)
@@ -147,12 +177,7 @@ async def main(page: ft.Page) -> None:
                 except Exception as error:
                     vista = _vista_de_error(route, error)
 
-                page.views.clear()
-                page.views.append(vista)
-                page.update()
-                return
-
-        if route.startswith("/user/"):
+        elif route.startswith("/user/"):
             target_username = route.removeprefix("/user/")
             if target_username:
                 try:
@@ -160,28 +185,32 @@ async def main(page: ft.Page) -> None:
                 except Exception as error:
                     vista = _vista_de_error(route, error)
 
-                page.views.clear()
-                page.views.append(vista)
-                page.update()
+        else:
+            builder = routes.get(route)
+            if builder is None:
+                await page.push_route("/login")
                 return
+            try:
+                vista = await builder()
+            except Exception as error:
+                vista = _vista_de_error(route, error)
 
-        builder = routes.get(route)
-        if builder is None:
+        if vista is None:
             await page.push_route("/login")
             return
 
-        try:
-            vista = await builder()
-        except Exception as error:
-            vista = _vista_de_error(route, error)
+        if not vista.controls:
+            return
 
-        page.views.clear()
-        page.views.append(vista)
-        page.update()
+        apilar(page, vista)
 
-    def view_pop(e: ft.ViewPopEvent) -> None:
-        if len(page.views) > 1:
-            page.views.pop()
+    async def view_pop(e: ft.ViewPopEvent) -> None:
+        if len(page.views) <= 1:
+            return
+
+        page.views.pop()
+        anterior = page.views[-1]
+        await page.push_route(anterior.route)
 
     page.on_route_change = route_change
     page.on_view_pop = view_pop
@@ -191,10 +220,15 @@ async def main(page: ft.Page) -> None:
             route="/loading",
             vertical_alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            bgcolor=Colors.BACKGROUND,
             controls=[
                 ft.ProgressRing(color=Colors.BRAND_DARK),
-                ft.Container(height=16),
-                ft.Text("Cargando Ashün...", color=Colors.TEXT_MUTED),
+                ft.Container(height=Space.MD),
+                ft.Text(
+                    "Cargando Ashün...",
+                    color=Colors.TEXT_MUTED,
+                    font_family=Fonts.BODY,
+                ),
             ],
         )
     )

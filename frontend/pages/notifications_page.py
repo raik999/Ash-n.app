@@ -1,10 +1,11 @@
 from __future__ import annotations
+
 from functools import partial
 from typing import Any
 
 import flet as ft
 
-from components.feedback import avatar_view, show_error
+from components.feedback import avatar_view, foto_de, show_error
 from components.layout import estado_vacio, safe_update, tarjeta
 from components.settings_row import screen_header
 from context.app_state import AppState
@@ -105,7 +106,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                         on_click=partial(abrir_perfil, usuario["username"]),
                         tooltip=f"Ver el perfil de {usuario['username']}",
                         content=avatar_view(
-                            api.absolute_url(usuario.get("avatar_url")), 44
+                            foto_de(usuario), 44
                         ),
                     ),
                     ft.Container(

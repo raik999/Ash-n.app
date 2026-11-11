@@ -3,7 +3,7 @@ from typing import Any
 
 import flet as ft
 
-from components.feedback import avatar_view, show_error
+from components.feedback import avatar_view, foto_de, show_error
 from components.layout import bottom_nav, safe_update
 from components.post_media import media_carousel, text_panel
 from components.tag_chip import display_chip
@@ -225,7 +225,7 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
                     ft.Container(
                         width=42,
                         height=42,
-                        content=avatar_view(api.absolute_url(autor.get("avatar_url")), 42),
+                        content=avatar_view(foto_de(autor), 42),
                     ),
                     ft.Text(
                         f"@{autor['username']}",

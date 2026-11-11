@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 from datetime import datetime, timezone
 from functools import partial
 from typing import Any
 
 import flet as ft
 
-from components.feedback import avatar_view, show_error
+from components.feedback import avatar_view, foto_de, show_error
 from components.settings_row import boton_barra, encabezado_principal
 from components.layout import bottom_nav, estado_vacio, safe_update, tarjeta
 from context.app_state import AppState
@@ -122,7 +123,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
                     ft.Container(
                         width=48,
                         height=48,
-                        content=avatar_view(api.absolute_url(otro.get("avatar_url")), 48),
+                        content=avatar_view(foto_de(otro), 48),
                     ),
                     ft.Container(
                         expand=True,

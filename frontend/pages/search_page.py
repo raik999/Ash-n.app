@@ -4,7 +4,7 @@ from typing import Any
 
 import flet as ft
 
-from components.feedback import avatar_view, show_error
+from components.feedback import avatar_view, foto_de, show_error
 from components.layout import bottom_nav, safe_update
 from context.app_state import AppState
 from services import search_service
@@ -248,7 +248,7 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
             ft.Container(
                 width=44,
                 height=44,
-                content=avatar_view(api.absolute_url(user.get("avatar_url")), 44),
+                content=avatar_view(foto_de(user), 44),
             ),
             user["username"],
             partial(open_profile, user["username"]),
