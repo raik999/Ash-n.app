@@ -80,7 +80,7 @@ def grid_cell(post: dict[str, Any], on_click) -> ft.Container:
     elif preview["kind"] == KIND_IMAGE:
         lado = pantalla().pixeles_para(int(pantalla().ancho / pantalla().columnas))
         contenido = ft.Image(
-            src=api.absolute_url(preview["url"]),
+            src=api.absolute_url(preview.get("thumb_url") or preview["url"]),
             fit=ft.BoxFit.COVER,
             expand=True,
             cache_width=lado,
