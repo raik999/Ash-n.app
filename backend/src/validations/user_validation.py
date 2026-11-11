@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import date, datetime
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, computed_field, field_validator, model_validator
 from entities.user import UserRole
 from validations.auth_validation import USERNAME_PATTERN
 
@@ -19,6 +19,13 @@ class UserResponse(BaseModel):
     birthdate: date | None = None
     bio: str | None = None
     avatar_url: str | None = None
+
+    @computed_field
+    @property
+    def avatar_thumb_url(self) -> str | None:
+        from services.storage_service import url_de_miniatura
+
+        return url_de_miniatura(self.avatar_url)
     tags: list[TagResponse] = Field(default_factory=list, alias="tipo")
     created_at: datetime | None = None
 
@@ -33,6 +40,13 @@ class PublicUserResponse(BaseModel):
     username: str
     bio: str | None = None
     avatar_url: str | None = None
+
+    @computed_field
+    @property
+    def avatar_thumb_url(self) -> str | None:
+        from services.storage_service import url_de_miniatura
+
+        return url_de_miniatura(self.avatar_url)
     tags: list[TagResponse] = Field(default_factory=list, alias="tipo")
     created_at: datetime | None = None
 
@@ -43,6 +57,13 @@ class UserSummaryResponse(BaseModel):
     username: str
     name: str
     avatar_url: str | None = None
+
+    @computed_field
+    @property
+    def avatar_thumb_url(self) -> str | None:
+        from services.storage_service import url_de_miniatura
+
+        return url_de_miniatura(self.avatar_url)
 
     model_config = ConfigDict(from_attributes=True)
 
