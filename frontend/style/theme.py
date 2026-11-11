@@ -122,7 +122,7 @@ class Sizes:
     AVATAR_LARGE = 110
     AVATAR_PROFILE = 78
 
-    NAV_BAR_HEIGHT = 64
+    NAV_BAR_HEIGHT = 76
 
 def sombra_suave(elevada: bool = False) -> ft.BoxShadow:
     return ft.BoxShadow(
