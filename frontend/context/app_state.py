@@ -10,7 +10,6 @@ from style import responsive
 
 STORAGE_TOKEN_KEY = "ashun.token"
 LEGACY_RECENTS_KEY = "ashun.recents"
-
 STORAGE_LIGERO_KEY = "ashun.modo_ligero"
 
 class AppState:
@@ -104,7 +103,9 @@ class AppState:
     def avatar_url(self) -> str | None:
         if not self.user:
             return None
-        return api.absolute_url(self.user.get("avatar_url"))
+        return api.absolute_url(
+            self.user.get("avatar_thumb_url") or self.user.get("avatar_url")
+        )
 
     async def load_recents(self, force: bool = False) -> list[dict[str, str]]:
         if self._recents is not None and not force:
