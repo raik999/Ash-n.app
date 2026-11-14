@@ -8,7 +8,6 @@ from services.security_service import hash_password, verify_password
 from validations.auth_validation import RegisterRequest
 from validations.user_validation import UpdateProfileRequest
 
-
 def get_user_by_id(db: Session, user_id: int) -> User | None:
     statement = select(User).where(User.id == user_id)
     return db.execute(statement).scalar_one_or_none()
@@ -137,6 +136,11 @@ def authenticate(db: Session, identifier: str, password: str) -> User:
 
     if not verify_password(password, user.password_hash):
         raise _invalid_credentials()
+
+    if user.mensaje_de_sancion:
+        from middleware.error_middleware import ForbiddenError
+
+        raise ForbiddenError(user.mensaje_de_sancion)
 
     return user
 

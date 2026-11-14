@@ -1,9 +1,7 @@
 from __future__ import annotations
-
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-
 from entities.post import Post
 from entities.report import MAX_MOTIVO, TIPO_PUBLICACION, TIPO_USUARIO, Report
 from entities.user import User
