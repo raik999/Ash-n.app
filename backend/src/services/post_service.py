@@ -26,6 +26,15 @@ def _require_author(post: Post, user: User) -> None:
     if post.user_id != user.id:
         raise ForbiddenError("Solo el autor puede modificar esta publicacion")
 
+def puede_borrar_publicacion(post: Post, user: User | None) -> bool:
+    if user is None:
+        return False
+    return post.user_id == user.id or user.is_admin
+
+def _require_puede_borrar(post: Post, user: User) -> None:
+    if not puede_borrar_publicacion(post, user):
+        raise ForbiddenError("No puedes eliminar esta publicacion")
+
 def _resolve_tags(db: Session, tag_ids: list[int]) -> list[Tag]:
     if not tag_ids:
         return []
@@ -108,15 +117,32 @@ def update_post(
     db.refresh(post)
     return post
 
-def delete_post(db: Session, user: User, post_id: int) -> None:
+def delete_post(
+    db: Session, user: User, post_id: int
+) -> tuple[str, tuple[str, str]] | None:
     post = _get_post_or_404(db, post_id)
-    _require_author(post, user)
+    _require_puede_borrar(post, user)
+
+    aviso = None
+    if post.user_id != user.id:
+        from services import email_service
+
+        aviso = (
+            post.author.email,
+            email_service.aviso_de_publicacion_eliminada(
+                nombre=post.author.name,
+                titulo=post.title,
+                descripcion=post.description,
+            ),
+        )
 
     for archivo in post.files:
         storage_service.delete_post_file(archivo.url)
 
     db.delete(post)
     db.commit()
+
+    return aviso
 
 def _assert_has_content(post: Post) -> None:
     if post.files:
@@ -253,7 +279,7 @@ def add_comment(db: Session, user: User, post_id: int, text: str) -> PostComment
 def can_delete_comment(comment: PostComment, post: Post, user: User | None) -> bool:
     if user is None:
         return False
-    return comment.user_id == user.id or post.user_id == user.id
+    return comment.user_id == user.id or post.user_id == user.id or user.is_admin
 
 def delete_comment(db: Session, user: User, post_id: int, comment_id: int) -> None:
     post = get_post(db, post_id, user)
