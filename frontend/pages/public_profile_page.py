@@ -79,6 +79,9 @@ async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
             ],
         )
 
+    async def ir_a_opciones(e) -> None:
+        await page.push_route(f"/user/{username}/settings")
+
     header = ft.Container(
         bgcolor=Colors.SURFACE,
         height=250,
@@ -94,13 +97,28 @@ async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
                 ft.Container(
                     content=ft.IconButton(
                         icon=ft.Icons.ARROW_BACK_IOS_NEW,
-                        icon_size=22,
+                        icon_size=Sizes.ICON_MD,
                         icon_color=Colors.BRAND_DARK,
                         tooltip="Volver",
                         on_click=go_back,
+                        width=Sizes.TOUCH_MIN,
+                        height=Sizes.TOUCH_MIN,
                     ),
-                    left=6,
-                    top=8,
+                    left=Space.XXS,
+                    top=Space.XXS,
+                ),
+                ft.Container(
+                    content=ft.IconButton(
+                        icon=ft.Icons.MORE_HORIZ,
+                        icon_size=Sizes.ICON_LG,
+                        icon_color=Colors.BRAND_DARK,
+                        tooltip=f"Opciones de {username}",
+                        on_click=ir_a_opciones,
+                        width=Sizes.TOUCH_MIN,
+                        height=Sizes.TOUCH_MIN,
+                    ),
+                    right=Space.XXS,
+                    top=Space.XXS,
                 ),
                 ft.Container(
                     left=14,
