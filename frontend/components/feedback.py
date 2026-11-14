@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import flet as ft
 
+from components.layout import safe_update
 from services.api_client import api
 from style.responsive import pantalla
 from style.theme import Colors, Radius, Sizes, Space, TextSizes
@@ -38,11 +39,14 @@ def confirm_dialog(
     cancel_text: str = "Cancelar",
     danger: bool = True,
     extra: ft.Control | None = None,
+    exigir_texto: str | None = None,
 ) -> ft.AlertDialog:
     def close(e=None) -> None:
         page.pop_dialog()
 
     async def handle_confirm(e) -> None:
+        if exigir_texto is not None and not _coincide():
+            return
         await on_confirm(close)
 
     content_controls: list[ft.Control] = [
@@ -56,6 +60,54 @@ def confirm_dialog(
     if extra is not None:
         content_controls.append(ft.Container(height=10))
         content_controls.append(extra)
+
+    campo_seguro = ft.TextField(
+        label=f"Escribe {exigir_texto} para confirmar" if exigir_texto else None,
+        dense=True,
+        autofocus=True,
+        text_style=ft.TextStyle(
+            color=Colors.TEXT_BODY, size=pantalla().texto(TextSizes.BODY)
+        ),
+        label_style=ft.TextStyle(
+            color=Colors.TEXT_MUTED, size=pantalla().texto(TextSizes.SMALL)
+        ),
+        border_color=Colors.DIVIDER,
+        focused_border_color=Colors.BRAND_RED,
+        cursor_color=Colors.TEXT_PRIMARY,
+    )
+
+    def _coincide() -> bool:
+        return (campo_seguro.value or "").strip() == (exigir_texto or "")
+
+    if exigir_texto is not None:
+        content_controls.append(ft.Container(height=14))
+        content_controls.append(campo_seguro)
+
+    etiqueta_confirmar = ft.Text(
+        confirm_text,
+        color=Colors.BRAND_RED if danger else Colors.TEXT_PRIMARY,
+        weight=ft.FontWeight.BOLD,
+    )
+
+    boton_confirmar = ft.TextButton(
+        content=etiqueta_confirmar,
+        on_click=handle_confirm,
+        disabled=exigir_texto is not None,
+    )
+
+    def al_escribir(e) -> None:
+        listo = _coincide()
+        boton_confirmar.disabled = not listo
+        etiqueta_confirmar.color = (
+            (Colors.BRAND_RED if danger else Colors.TEXT_PRIMARY)
+            if listo
+            else Colors.DISABLED_FG
+        )
+        safe_update(boton_confirmar, etiqueta_confirmar)
+
+    if exigir_texto is not None:
+        campo_seguro.on_change = al_escribir
+        etiqueta_confirmar.color = Colors.DISABLED_FG
 
     dialog = ft.AlertDialog(
         modal=True,
@@ -73,14 +125,7 @@ def confirm_dialog(
         ),
         actions=[
             ft.TextButton(cancel_text, on_click=close),
-            ft.TextButton(
-                content=ft.Text(
-                    confirm_text,
-                    color=Colors.BRAND_RED if danger else Colors.TEXT_PRIMARY,
-                    weight=ft.FontWeight.BOLD,
-                ),
-                on_click=handle_confirm,
-            ),
+            boton_confirmar,
         ],
         actions_alignment=ft.MainAxisAlignment.END,
     )
