@@ -1,9 +1,16 @@
 from __future__ import annotations
 from typing import Any
 
+import asyncio
 import httpx
 
 from config import api_base_url
+
+def _correr(corutina) -> None:
+    try:
+        asyncio.get_running_loop().create_task(corutina)
+    except RuntimeError:
+        corutina.close()
 
 API_BASE_URL = api_base_url()
 
@@ -20,6 +27,8 @@ class ApiClient:
     def __init__(self, base_url: str = API_BASE_URL):
         self.base_url = base_url.rstrip("/")
         self._token: str | None = None
+
+        self.al_perder_sesion = None
 
     def set_token(self, token: str | None) -> None:
         self._token = token
@@ -86,6 +95,10 @@ class ApiClient:
             if isinstance(detail, str):
                 message = detail
             field = data.get("field")
+
+        if response.status_code == 401 and self._token and self.al_perder_sesion:
+            self._token = None
+            _correr(self.al_perder_sesion(message))
 
         raise ApiError(message, field=field, status=response.status_code)
 

@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from typing import Any
-
 from services.api_client import api
 
 async def reportar_publicacion(post_id: int, motivo: str | None = None) -> dict[str, Any]:
