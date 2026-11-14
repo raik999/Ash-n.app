@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 from config.database import get_db
 from controller import post_controller
@@ -134,10 +134,11 @@ def update_post(
 )
 def delete_post(
     post_id: int,
+    tareas: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MessageResponse:
-    return post_controller.delete_post(db, current_user, post_id)
+    return post_controller.delete_post(db, current_user, post_id, tareas)
 
 @router.get("/{post_id}", response_model=PostResponse, summary="Ver una publicacion")
 def get_post(
