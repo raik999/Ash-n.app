@@ -1,9 +1,7 @@
 from __future__ import annotations
-
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
-
 from config.database import SessionLocal, get_db
 from controller import chat_controller
 from entities.user import User
@@ -137,8 +135,13 @@ async def websocket_chat(websocket: WebSocket, token: str = "") -> None:
     db = SessionLocal()
     try:
         usuario = user_service.get_user_by_id(db, user_id)
+        sancionado = usuario is not None and usuario.esta_sancionado
     finally:
         db.close()
+
+    if sancionado:
+        await websocket.close(code=1008, reason="Cuenta suspendida")
+        return
 
     if usuario is None:
         await websocket.close(code=1008, reason="El usuario ya no existe")
