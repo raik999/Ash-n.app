@@ -8,10 +8,12 @@ from config.database import SessionLocal, init_database
 from config.settings import settings
 from middleware.error_middleware import register_error_handlers
 from routes import (
+    admin_routes,
     auth_routes,
     chat_routes,
     notification_routes,
     post_routes,
+    report_routes,
     tag_routes,
     user_routes,
 )
@@ -77,6 +79,8 @@ app.include_router(tag_routes.router)
 app.include_router(post_routes.router)
 app.include_router(chat_routes.router)
 app.include_router(notification_routes.router)
+app.include_router(admin_routes.router)
+app.include_router(report_routes.router)
 
 @app.get("/", tags=["Sistema"], summary="Saludo de la API")
 def root() -> dict:
