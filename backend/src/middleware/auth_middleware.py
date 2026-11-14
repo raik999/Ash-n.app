@@ -1,9 +1,7 @@
 from __future__ import annotations
-
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
-
 from config.database import get_db
 from entities.user import User, UserRole
 from middleware.error_middleware import ForbiddenError, UnauthorizedError
@@ -11,7 +9,6 @@ from services.security_service import decode_access_token
 from services.user_service import get_user_by_id
 
 bearer_scheme = HTTPBearer(auto_error=False, description="Token JWT de Ashun")
-
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
@@ -35,8 +32,10 @@ def get_current_user(
     if user is None:
         raise UnauthorizedError("El usuario del token ya no existe")
 
-    return user
+    if user.mensaje_de_sancion:
+        raise UnauthorizedError(user.mensaje_de_sancion)
 
+    return user
 
 def get_current_user_optional(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
@@ -48,7 +47,6 @@ def get_current_user_optional(
         return get_current_user(credentials=credentials, db=db)
     except UnauthorizedError:
         return None
-
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != UserRole.ADMIN:
