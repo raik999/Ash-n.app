@@ -31,6 +31,7 @@ def init_database() -> None:
     from entities.post_comment import PostComment
     from entities.post_file import PostFile
     from entities.post_like import PostLike
+    from entities.report import Report
     from entities.search_history import SearchHistory
     from entities.tag import Tag
     from entities.user import User
