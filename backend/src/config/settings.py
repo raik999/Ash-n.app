@@ -18,6 +18,13 @@ class Settings(BaseSettings):
 
     database_url: str | None = None
 
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_use_tls: bool = True
+
     jwt_secret: str = "cambia-esta-clave-en-produccion-por-favor"
     jwt_algorithm: str = "HS256"
     jwt_expiration_minutes: int = 60 * 24 * 7
@@ -27,7 +34,6 @@ class Settings(BaseSettings):
     upload_dir: Path = BACKEND_DIR / "uploads"
 
     max_upload_size: int = 5 * 1024 * 1024
-
     max_audio_size: int = 15 * 1024 * 1024
     max_video_size: int = 50 * 1024 * 1024
 
