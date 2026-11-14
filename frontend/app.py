@@ -3,6 +3,7 @@ from __future__ import annotations
 import traceback
 import flet as ft
 
+from components.feedback import show_error
 from components.layout import asegurar_zona
 from context.app_state import AppState
 from pages import (
@@ -24,7 +25,9 @@ from pages import (
     search_page,
     settings_page,
     tags_page,
+    user_settings_page,
 )
+from services.api_client import api
 from style import responsive
 from style.theme import Colors, Fonts, Space, TextSizes, app_theme
 
@@ -103,6 +106,13 @@ async def main(page: ft.Page) -> None:
     page.theme = app_theme(medidas.ligero)
     page.theme_mode = ft.ThemeMode.LIGHT
 
+    async def al_perder_sesion(motivo: str) -> None:
+        show_error(page, motivo)
+        await state.clear_session()
+        await page.push_route("/login")
+
+    api.al_perder_sesion = al_perder_sesion
+
     async def al_cambiar_tamano(e) -> None:
         responsive.medir(page)
 
@@ -178,10 +188,19 @@ async def main(page: ft.Page) -> None:
                     vista = _vista_de_error(route, error)
 
         elif route.startswith("/user/"):
-            target_username = route.removeprefix("/user/")
+            resto = route.removeprefix("/user/")
+            partes = resto.split("/")
+            target_username = partes[0]
             if target_username:
                 try:
-                    vista = await public_profile_page.view(page, state, target_username)
+                    if len(partes) > 1 and partes[1] == "settings":
+                        vista = await user_settings_page.view(
+                            page, state, target_username
+                        )
+                    else:
+                        vista = await public_profile_page.view(
+                            page, state, target_username
+                        )
                 except Exception as error:
                     vista = _vista_de_error(route, error)
 
