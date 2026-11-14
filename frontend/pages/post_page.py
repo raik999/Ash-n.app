@@ -140,13 +140,19 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
         ft.Container(expand=True),
     ]
 
-    if soy_el_autor:
+    if state.is_authenticated:
         acciones.append(
             ft.IconButton(
                 icon=ft.Icons.MORE_HORIZ,
-                icon_size=28,
+                icon_size=Sizes.ICON_LG,
                 icon_color=Colors.TEXT_PRIMARY,
-                tooltip="Configuracion de la publicacion",
+                width=Sizes.TOUCH_MIN,
+                height=Sizes.TOUCH_MIN,
+                tooltip=(
+                    "Configuracion de la publicacion"
+                    if soy_el_autor
+                    else "Opciones de la publicacion"
+                ),
                 on_click=ir_a_configuracion,
             )
         )
