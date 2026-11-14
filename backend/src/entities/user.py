@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import enum
+import math
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import TYPE_CHECKING
 from sqlalchemy import Date, DateTime, Enum, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -35,6 +36,12 @@ class User(Base, TimestampMixin):
     notifications_seen_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    banned_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    banned_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
     tags: Mapped[list[Tag]] = relationship(
@@ -47,6 +54,43 @@ class User(Base, TimestampMixin):
     @property
     def is_admin(self) -> bool:
         return self.role == UserRole.ADMIN
+
+    @property
+    def esta_sancionado(self) -> bool:
+        if self.banned_until is None:
+            return False
+
+        hasta = self.banned_until
+        if hasta.tzinfo is None:
+            hasta = hasta.replace(tzinfo=timezone.utc)
+
+        return hasta > datetime.now(timezone.utc)
+
+    @property
+    def dias_de_sancion_restantes(self) -> int:
+        if not self.esta_sancionado:
+            return 0
+
+        hasta = self.banned_until
+        if hasta.tzinfo is None:
+            hasta = hasta.replace(tzinfo=timezone.utc)
+
+        faltan = hasta - datetime.now(timezone.utc)
+        return max(1, math.ceil(faltan.total_seconds() / 86400))
+
+    @property
+    def mensaje_de_sancion(self) -> str | None:
+        if not self.esta_sancionado:
+            return None
+
+        dias = self.dias_de_sancion_restantes
+        plural = "dia" if dias == 1 else "dias"
+
+        texto = f"Tu cuenta esta suspendida. Faltan {dias} {plural}."
+        if self.banned_reason:
+            texto += f" Motivo: {self.banned_reason}"
+
+        return texto
 
     def __repr__(self) -> str:
         return f"<User #{self.id} @{self.username}>"
