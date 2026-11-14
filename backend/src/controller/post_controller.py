@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from entities.post import Post
 from entities.user import User
 from middleware.error_middleware import NotFoundError
-from services import post_service, user_service
+from fastapi import BackgroundTasks
+from services import email_service, post_service, user_service
 from validations.auth_validation import MessageResponse
 from validations.post_validation import (
     CommentResponse,
@@ -32,6 +33,7 @@ def _to_response(
         comments_count=comments,
         liked_by_me=liked,
         can_edit=viewer is not None and viewer.id == post.user_id,
+        can_delete=post_service.puede_borrar_publicacion(post, viewer),
     )
 
 def _to_summary(post: Post, likes: int, comments: int) -> PostSummaryResponse:
@@ -75,8 +77,15 @@ def publish_post(db: Session, user: User, post_id: int) -> PostResponse:
     post = post_service.publish_post(db, user, post_id)
     return _single(db, post, user)
 
-def delete_post(db: Session, user: User, post_id: int) -> MessageResponse:
-    post_service.delete_post(db, user, post_id)
+def delete_post(
+    db: Session, user: User, post_id: int, tareas: BackgroundTasks | None = None
+) -> MessageResponse:
+    aviso = post_service.delete_post(db, user, post_id)
+
+    if aviso is not None and tareas is not None:
+        destino, (asunto, cuerpo) = aviso
+        tareas.add_task(email_service.enviar, [destino], asunto, cuerpo)
+
     return MessageResponse(detail="Publicacion eliminada")
 
 def get_post(db: Session, post_id: int, viewer: User | None) -> PostResponse:
