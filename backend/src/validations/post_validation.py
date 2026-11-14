@@ -38,6 +38,8 @@ class PostResponse(BaseModel):
 
     can_edit: bool = False
 
+    can_delete: bool = False
+
     model_config = ConfigDict(from_attributes=True)
 
 class PostSummaryResponse(BaseModel):
