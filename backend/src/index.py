@@ -12,6 +12,7 @@ from routes import (
     auth_routes,
     chat_routes,
     notification_routes,
+    portfolio_routes,
     post_routes,
     report_routes,
     tag_routes,
@@ -77,6 +78,7 @@ app.include_router(auth_routes.router)
 app.include_router(user_routes.router)
 app.include_router(tag_routes.router)
 app.include_router(post_routes.router)
+app.include_router(portfolio_routes.router)
 app.include_router(chat_routes.router)
 app.include_router(notification_routes.router)
 app.include_router(admin_routes.router)
