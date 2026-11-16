@@ -6,11 +6,12 @@ import flet as ft
 
 from components.feedback import avatar_view, foto_de, show_error
 from components.layout import bottom_nav, estado_vacio
+from components.portfolio_card import tarjeta_de_portafolio
 from components.profile_scroll import grilla_fija, perfil_desplazable
 from components.post_media import grid_cell
 from components.tag_chip import display_chip
 from context.app_state import AppState
-from services import post_service, user_service
+from services import portfolio_service, post_service, user_service
 from services.api_client import ApiError, api
 from style.responsive import pantalla
 from style.theme import Colors, Fonts, LineHeight, Radius, Sizes, Space, TextSizes
@@ -178,6 +179,12 @@ async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
     except ApiError:
         publicaciones = []
 
+    portafolios: list[dict] = []
+    try:
+        portafolios = await portfolio_service.list_portfolios(username)
+    except ApiError:
+        portafolios = []
+
     async def abrir_publicacion(post_id: int) -> None:
         await page.push_route(f"/post/{post_id}")
 
@@ -198,11 +205,23 @@ async def view(page: ft.Page, state: AppState, username: str) -> ft.View:
         ]
         return grilla_fija(celdas, ancho_disponible=ancho_grilla)
 
+    async def abrir_portafolio(portfolio_id: int) -> None:
+        await page.push_route(f"/portfolio/{portfolio_id}")
+
     def pestana_portafolios() -> ft.Control:
-        return estado_vacio(
-            ft.Icons.COLLECTIONS_OUTLINED,
-            "Todavia no hay portafolios",
-            f"@{profile['username']} aun no agrupo sus publicaciones.",
+        if not portafolios:
+            return estado_vacio(
+                ft.Icons.COLLECTIONS_OUTLINED,
+                "Todavia no hay portafolios",
+                f"@{profile['username']} aun no agrupo sus publicaciones.",
+            )
+
+        return ft.Column(
+            spacing=Space.XS,
+            controls=[
+                tarjeta_de_portafolio(p, partial(abrir_portafolio, p["id"]))
+                for p in portafolios
+            ],
         )
 
     bio = profile.get("bio")

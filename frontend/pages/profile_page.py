@@ -6,11 +6,12 @@ import flet as ft
 from components.feedback import avatar_view, show_error, show_success
 from components.fields import underline_field
 from components.layout import bottom_nav, estado_vacio
+from components.portfolio_card import tarjeta_de_crear, tarjeta_de_portafolio
 from components.profile_scroll import grilla_fija, perfil_desplazable
 from components.post_media import grid_cell, new_post_cell
 from components.tag_chip import display_chip
 from context.app_state import AppState
-from services import post_service, user_service
+from services import portfolio_service, post_service, user_service
 from services.api_client import ApiError
 from style.responsive import pantalla
 from style.theme import Colors, Fonts, Radius, Sizes, Space, TextSizes
@@ -29,6 +30,12 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
         publicaciones = await post_service.list_user_posts(user["username"])
     except ApiError as error:
         show_error(page, error.message)
+
+    portafolios: list[dict] = []
+    try:
+        portafolios = await portfolio_service.list_portfolios(user["username"])
+    except ApiError:
+        pass
 
     async def go_to_settings(e: ft.ControlEvent) -> None:
         await page.push_route("/settings")
@@ -165,12 +172,34 @@ async def view(page: ft.Page, state: AppState) -> ft.View:
 
         return grilla_fija(celdas, ancho_disponible=ancho_grilla)
 
+    async def abrir_portafolio(portfolio_id: int) -> None:
+        await page.push_route(f"/portfolio/{portfolio_id}")
+
+    async def crear_portafolio(e) -> None:
+        await page.push_route("/portfolio/new")
+
     def pestana_portafolios() -> ft.Control:
-        return estado_vacio(
-            ft.Icons.COLLECTIONS_OUTLINED,
-            "Todavia no tienes portafolios",
-            "Cuando agrupes publicaciones en portafolios, los vas a ver aqui.",
-        )
+        filas: list[ft.Control] = []
+
+        if portafolios:
+            filas.extend(
+                tarjeta_de_portafolio(p, partial(abrir_portafolio, p["id"]))
+                for p in portafolios
+            )
+        else:
+            filas.append(
+                estado_vacio(
+                    ft.Icons.COLLECTIONS_OUTLINED,
+                    "Todavia no tienes portafolios",
+                    "Un portafolio es una carpeta para agrupar tus obras. "
+                    "Las publicaciones que metas siguen apareciendo en tu "
+                    "perfil como siempre.",
+                )
+            )
+
+        filas.append(tarjeta_de_crear(crear_portafolio))
+
+        return ft.Column(spacing=Space.XS, controls=filas)
 
     bloque_superior = ft.Column(
         spacing=0,
