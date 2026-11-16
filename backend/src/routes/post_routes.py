@@ -2,6 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 from config.database import get_db
 from controller import post_controller
+from services import portfolio_service, post_service
 from entities.user import User
 from middleware.auth_middleware import get_current_user, get_current_user_optional
 from validations.auth_validation import MessageResponse
@@ -12,6 +13,7 @@ from validations.post_validation import (
     LikeResponse,
     PostFileResponse,
     PostResponse,
+    PrivacyRequest,
     UpdatePostRequest,
 )
 
@@ -147,3 +149,29 @@ def get_post(
     db: Session = Depends(get_db),
 ) -> PostResponse:
     return post_controller.get_post(db, post_id, viewer)
+
+@router.patch(
+    "/{post_id}/privacidad",
+    response_model=PostResponse,
+    summary="Hacer la publicacion publica o privada",
+)
+def cambiar_privacidad(
+    post_id: int,
+    payload: PrivacyRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PostResponse:
+    post = post_service.set_privacy(db, current_user, post_id, payload.is_private)
+    return post_controller.get_post(db, post.id, current_user)
+
+@router.get(
+    "/{post_id}/portfolios",
+    response_model=list[int],
+    summary="En cuales de mis portafolios esta esta publicacion",
+)
+def portafolios_con_esta(
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[int]:
+    return sorted(portfolio_service.portafolios_con(db, current_user, post_id))
