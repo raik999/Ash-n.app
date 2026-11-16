@@ -51,6 +51,10 @@ class Post(Base, TimestampMixin):
         Boolean, nullable=False, default=False, server_default="false"
     )
 
+    is_private: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+
     author: Mapped[User] = relationship("User", lazy="joined")
 
     files: Mapped[list[PostFile]] = relationship(
