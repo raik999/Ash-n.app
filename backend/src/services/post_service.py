@@ -26,6 +26,15 @@ def _require_author(post: Post, user: User) -> None:
     if post.user_id != user.id:
         raise ForbiddenError("Solo el autor puede modificar esta publicacion")
 
+def puede_ver_publicacion(post: Post, viewer: User | None) -> bool:
+    if post.user_id == (viewer.id if viewer else None):
+        return True
+
+    if viewer is not None and viewer.is_admin:
+        return True
+
+    return post.published and not post.is_private
+
 def puede_borrar_publicacion(post: Post, user: User | None) -> bool:
     if user is None:
         return False
@@ -113,6 +122,15 @@ def update_post(
     if post.published:
         _assert_has_content(post)
 
+    db.commit()
+    db.refresh(post)
+    return post
+
+def set_privacy(db: Session, user: User, post_id: int, privada: bool) -> Post:
+    post = _get_post_or_404(db, post_id)
+    _require_author(post, user)
+
+    post.is_private = bool(privada)
     db.commit()
     db.refresh(post)
     return post
@@ -210,7 +228,7 @@ def remove_file(db: Session, user: User, post_id: int, file_id: int) -> None:
 def get_post(db: Session, post_id: int, viewer: User | None) -> Post:
     post = _get_post_or_404(db, post_id)
 
-    if not post.published and (viewer is None or viewer.id != post.user_id):
+    if not puede_ver_publicacion(post, viewer):
         raise NotFoundError("Esa publicacion no existe")
 
     return post
@@ -218,8 +236,13 @@ def get_post(db: Session, post_id: int, viewer: User | None) -> Post:
 def list_user_posts(db: Session, author: User, viewer: User | None) -> list[Post]:
     statement = select(Post).where(Post.user_id == author.id)
 
-    if viewer is None or viewer.id != author.id:
-        statement = statement.where(Post.published.is_(True))
+    es_el_dueno = viewer is not None and viewer.id == author.id
+    es_admin = viewer is not None and viewer.is_admin
+
+    if not es_el_dueno and not es_admin:
+        statement = statement.where(
+            Post.published.is_(True), Post.is_private.is_(False)
+        )
 
     statement = statement.order_by(Post.id.desc())
     return list(db.scalars(statement).all())
