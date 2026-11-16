@@ -40,6 +40,8 @@ class PostResponse(BaseModel):
 
     can_delete: bool = False
 
+    is_private: bool = False
+
     model_config = ConfigDict(from_attributes=True)
 
 class PostSummaryResponse(BaseModel):
@@ -51,6 +53,10 @@ class PostSummaryResponse(BaseModel):
     likes_count: int = 0
     comments_count: int = 0
 
+    is_private: bool = False
+
+    published: bool = True
+
     model_config = ConfigDict(from_attributes=True)
 
 class CommentResponse(BaseModel):
@@ -60,6 +66,8 @@ class CommentResponse(BaseModel):
     author: UserSummaryResponse
 
     can_delete: bool = False
+
+    is_private: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -89,6 +97,9 @@ class CreatePostRequest(BaseModel):
         if len(unique) > MAX_TAGS_PER_POST:
             raise ValueError(f"Puedes elegir como maximo {MAX_TAGS_PER_POST} especialidades")
         return unique
+
+class PrivacyRequest(BaseModel):
+    is_private: bool
 
 class UpdatePostRequest(CreatePostRequest):
     pass
