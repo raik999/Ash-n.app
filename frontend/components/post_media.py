@@ -7,7 +7,7 @@ import flet_video as fv
 
 from services.api_client import api
 from style.responsive import pantalla
-from style.theme import Colors, TextSizes
+from style.theme import Colors, Radius, TextSizes
 
 KIND_IMAGE = "image"
 KIND_VIDEO = "video"
@@ -92,6 +92,22 @@ def grid_cell(post: dict[str, Any], on_click) -> ft.Container:
         contenido = _tarjeta(ft.Icons.MUSIC_NOTE, "Audio", Colors.MEDIA_AUDIO, pequena=True)
 
     capas: list[ft.Control] = [ft.Container(content=contenido, expand=True)]
+
+    if post.get("is_private"):
+        capas.append(
+            ft.Container(
+                left=6,
+                top=6,
+                width=24,
+                height=24,
+                bgcolor=Colors.BRAND_DARK,
+                border_radius=Radius.PILL,
+                alignment=ft.Alignment.CENTER,
+                tooltip="Privada: solo la ves vos",
+                content=ft.Icon(ft.Icons.LOCK, size=13, color=Colors.TEXT_ON_DARK),
+            )
+        )
+
     if (post.get("files_count") or 0) > 1:
         capas.append(
             ft.Container(
