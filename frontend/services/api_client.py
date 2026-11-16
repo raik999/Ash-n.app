@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any
 
 import asyncio
+
 import httpx
 
 from config import api_base_url
@@ -110,6 +111,9 @@ class ApiClient:
 
     async def patch(self, path: str, json: dict[str, Any] | None = None) -> Any:
         return await self.request("PATCH", path, json=json)
+
+    async def put(self, path: str, json: dict[str, Any] | None = None) -> Any:
+        return await self.request("PUT", path, json=json)
 
     async def delete(self, path: str, json: dict[str, Any] | None = None) -> Any:
         return await self.request("DELETE", path, json=json)
