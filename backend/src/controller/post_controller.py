@@ -34,6 +34,7 @@ def _to_response(
         liked_by_me=liked,
         can_edit=viewer is not None and viewer.id == post.user_id,
         can_delete=post_service.puede_borrar_publicacion(post, viewer),
+        is_private=post.is_private,
     )
 
 def _to_summary(post: Post, likes: int, comments: int) -> PostSummaryResponse:
@@ -45,6 +46,8 @@ def _to_summary(post: Post, likes: int, comments: int) -> PostSummaryResponse:
         files_count=len(post.files),
         likes_count=likes,
         comments_count=comments,
+        is_private=post.is_private,
+        published=post.published,
     )
 
 def _single(db: Session, post: Post, viewer: User | None) -> PostResponse:
