@@ -27,6 +27,38 @@ from pages import (
     tags_page,
     user_settings_page,
 )
+from __future__ import annotations
+
+import traceback
+import flet as ft
+
+from components.feedback import show_error
+from components.layout import asegurar_zona
+from context.app_state import AppState
+from pages import (
+    account_page,
+    avatar_page,
+    birthdate_page,
+    chat_page,
+    chat_settings_page,
+    chats_page,
+    comments_page,
+    login_page,
+    notifications_page,
+    portfolio_editor_page,
+    portfolio_page,
+    portfolio_picker_page,
+    post_editor_page,
+    post_page,
+    post_settings_page,
+    profile_page,
+    public_profile_page,
+    register_page,
+    search_page,
+    settings_page,
+    tags_page,
+    user_settings_page,
+)
 from services.api_client import api
 from style import responsive
 from style.theme import Colors, Fonts, Space, TextSizes, app_theme
@@ -150,6 +182,7 @@ async def main(page: ft.Page) -> None:
             route in public_routes
             or route.startswith("/user/")
             or (route.startswith("/post/") and route != "/post/new")
+            or route.startswith("/portfolio/")
         )
         if not es_publica and not state.is_authenticated:
             await page.push_route("/login")
@@ -186,6 +219,25 @@ async def main(page: ft.Page) -> None:
                         vista = await chat_page.view(page, state, chat_id)
                 except Exception as error:
                     vista = _vista_de_error(route, error)
+
+        elif route.startswith("/portfolio/"):
+            partes = route.strip("/").split("/")
+            resto = partes[1] if len(partes) > 1 else ""
+            seccion = partes[2] if len(partes) > 2 else ""
+
+            try:
+                if resto == "new":
+                    vista = await portfolio_editor_page.view(page, state)
+                elif resto.isdigit():
+                    pid = int(resto)
+                    if seccion == "edit":
+                        vista = await portfolio_editor_page.view(page, state, pid)
+                    elif seccion == "posts":
+                        vista = await portfolio_picker_page.view(page, state, pid)
+                    else:
+                        vista = await portfolio_page.view(page, state, pid)
+            except Exception as error:
+                vista = _vista_de_error(route, error)
 
         elif route.startswith("/user/"):
             resto = route.removeprefix("/user/")
