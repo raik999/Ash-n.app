@@ -1,12 +1,18 @@
 from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.orm import Session
 from config.database import get_db
-from controller import post_controller, search_controller, user_controller
+from controller import (
+    portfolio_controller,
+    post_controller,
+    search_controller,
+    user_controller,
+)
 from entities.user import User
 from middleware.auth_middleware import get_current_user, get_current_user_optional
 from validations.auth_validation import MessageResponse
 from validations.post_validation import PostSummaryResponse
 from validations.search_validation import AddSearchRequest, SearchHistoryEntry
+from validations.portfolio_validation import PortfolioSummaryResponse
 from validations.user_validation import (
     AvatarResponse,
     ChangePasswordRequest,
@@ -160,3 +166,15 @@ def get_user_profile(
     db: Session = Depends(get_db),
 ) -> PublicUserResponse:
     return user_controller.get_user_profile(db, username)
+
+@router.get(
+    "/{username}/portfolios",
+    response_model=list[PortfolioSummaryResponse],
+    summary="Los portafolios de un perfil",
+)
+def portafolios_de(
+    username: str,
+    viewer: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+) -> list[PortfolioSummaryResponse]:
+    return portfolio_controller.list_portfolios(db, username, viewer)
