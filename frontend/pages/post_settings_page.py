@@ -3,12 +3,13 @@ from __future__ import annotations
 import flet as ft
 
 from components.feedback import confirm_dialog, show_error, show_success
+from components.layout import safe_update
 from components.settings_row import screen_header, section_title, settings_row
 from context.app_state import AppState
-from services import moderation_service, post_service
+from services import moderation_service, portfolio_service, post_service
 from services.api_client import ApiError
 from style.responsive import pantalla
-from style.theme import Colors, TextSizes
+from style.theme import Colors, Radius, Space, TextSizes
 
 async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
     ruta = f"/post/{post_id}/settings"
@@ -31,6 +32,17 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
         False if soy_el_autor else await moderation_service.ya_reporte_publicacion(post_id)
     )
     autor = (publicacion.get("author") or {}).get("username", "")
+
+    mis_portafolios: list[dict] = []
+    ya_dentro: set[int] = set()
+    if soy_el_autor:
+        try:
+            mis_portafolios = await portfolio_service.list_portfolios(
+                state.user["username"]
+            )
+            ya_dentro = set(await portfolio_service.portafolios_de(post_id))
+        except ApiError:
+            pass
 
     async def volver(e) -> None:
         await page.push_route(f"/post/{post_id}")
@@ -67,6 +79,139 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
             on_confirm=eliminar_de_verdad,
             danger=True,
         )
+
+    es_privada = bool(publicacion.get("is_private"))
+
+    async def cambiar_privacidad_de_verdad(cerrar) -> None:
+        try:
+            await portfolio_service.set_privacidad(post_id, not es_privada)
+        except ApiError as error:
+            cerrar()
+            show_error(page, error.message)
+            return
+
+        cerrar()
+        show_success(
+            page,
+            "Ahora solo la ves vos" if not es_privada else "Ahora la puede ver cualquiera",
+        )
+        await page.push_route(f"/post/{post_id}/settings")
+
+    def cambiar_privacidad(e) -> None:
+        if es_privada:
+            mensaje = (
+                "Va a volver a aparecer en tu perfil y cualquiera va a poder "
+                "verla, darle me gusta y comentarla.\n\n"
+                "Los me gusta y comentarios que tenia antes de esconderla "
+                "vuelven con ella."
+            )
+            titulo = "Hacerla publica"
+            boton = "Hacerla publica"
+        else:
+            mensaje = (
+                "Deja de aparecer en tu perfil, en el buscador y en los "
+                "portafolios. Nadie mas va a poder abrirla.\n\n"
+                "Sus me gusta y comentarios no se borran: quedan guardados y "
+                "vuelven si la haces publica otra vez."
+            )
+            titulo = "Hacerla privada"
+            boton = "Hacerla privada"
+
+        confirm_dialog(
+            page,
+            title=titulo,
+            message=mensaje,
+            confirm_text=boton,
+            on_confirm=cambiar_privacidad_de_verdad,
+            danger=False,
+        )
+
+    def abrir_portafolios(e) -> None:
+        page.show_dialog(dialogo_portafolios)
+
+    def cerrar_portafolios(e=None) -> None:
+        page.pop_dialog()
+
+    def fila_de_portafolio(portafolio: dict) -> ft.Control:
+        pid = portafolio["id"]
+        dentro = pid in ya_dentro
+
+        marca = ft.Icon(
+            ft.Icons.CHECK_CIRCLE if dentro else ft.Icons.RADIO_BUTTON_UNCHECKED,
+            size=22,
+            color=Colors.BRAND_DARK if dentro else Colors.TEXT_FAINT,
+        )
+
+        async def alternar(evento) -> None:
+            try:
+                if pid in ya_dentro:
+                    await portfolio_service.remove_post(pid, post_id)
+                    ya_dentro.discard(pid)
+                else:
+                    await portfolio_service.add_post(pid, post_id)
+                    ya_dentro.add(pid)
+            except ApiError as error:
+                show_error(page, error.message)
+                return
+
+            esta = pid in ya_dentro
+            marca.name = (
+                ft.Icons.CHECK_CIRCLE if esta else ft.Icons.RADIO_BUTTON_UNCHECKED
+            )
+            marca.color = Colors.BRAND_DARK if esta else Colors.TEXT_FAINT
+            safe_update(marca)
+
+        return ft.Container(
+            on_click=alternar,
+            ink=True,
+            border_radius=Radius.SM,
+            padding=ft.Padding.symmetric(horizontal=Space.XS, vertical=Space.XS),
+            content=ft.Row(
+                spacing=Space.SM,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                controls=[
+                    ft.Container(
+                        width=28,
+                        height=28,
+                        bgcolor=portafolio.get("color") or Colors.CHIP_FALLBACK,
+                        border_radius=Radius.XS,
+                    ),
+                    ft.Container(
+                        expand=True,
+                        content=ft.Text(
+                            portafolio.get("title") or "",
+                            size=pantalla().texto(TextSizes.BODY),
+                            color=Colors.TEXT_BODY,
+                            max_lines=1,
+                            overflow=ft.TextOverflow.ELLIPSIS,
+                        ),
+                    ),
+                    marca,
+                ],
+            ),
+        )
+
+    dialogo_portafolios = ft.AlertDialog(
+        shape=ft.RoundedRectangleBorder(radius=Radius.MD),
+        bgcolor=Colors.BACKGROUND,
+        title=ft.Text(
+            "Agregar a portafolio",
+            weight=ft.FontWeight.BOLD,
+            color=Colors.TEXT_PRIMARY,
+            size=pantalla().texto(TextSizes.SUBTITLE),
+        ),
+        content=ft.Container(
+            width=min(320, pantalla().ancho - 80),
+            content=ft.Column(
+                tight=True,
+                spacing=2,
+                scroll=ft.ScrollMode.AUTO,
+                controls=[fila_de_portafolio(p) for p in mis_portafolios],
+            ),
+        ),
+        actions=[ft.TextButton("Listo", on_click=cerrar_portafolios)],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
 
     campo_motivo = ft.TextField(
         hint_text="Que esta pasando? (opcional)",
@@ -120,6 +265,29 @@ async def view(page: ft.Page, state: AppState, post_id: int) -> ft.View:
         filas.extend(
             [
                 settings_row(ft.Icons.EDIT, "Editar Publicacion", on_click=editar),
+                settings_row(
+                    ft.Icons.LOCK_OUTLINE if es_privada else ft.Icons.PUBLIC,
+                    "Privada" if es_privada else "Publica",
+                    subtitulo=(
+                        "Solo la ves vos. Toca para hacerla publica"
+                        if es_privada
+                        else "Cualquiera la puede ver. Toca para hacerla privada"
+                    ),
+                    on_click=cambiar_privacidad,
+                    show_chevron=False,
+                ),
+                settings_row(
+                    ft.Icons.COLLECTIONS_OUTLINED,
+                    "Agregar a portafolio",
+                    subtitulo=(
+                        f"Esta en {len(ya_dentro)} de tus {len(mis_portafolios)}"
+                        if mis_portafolios
+                        else "Todavia no tienes portafolios"
+                    ),
+                    on_click=abrir_portafolios if mis_portafolios else None,
+                    enabled=bool(mis_portafolios),
+                ),
+                ft.Container(height=Space.XS),
                 settings_row(
                     ft.Icons.CLOSE,
                     "Eliminar publicacion",
