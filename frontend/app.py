@@ -16,35 +16,6 @@ from pages import (
     comments_page,
     login_page,
     notifications_page,
-    post_editor_page,
-    post_page,
-    post_settings_page,
-    profile_page,
-    public_profile_page,
-    register_page,
-    search_page,
-    settings_page,
-    tags_page,
-    user_settings_page,
-)
-from __future__ import annotations
-
-import traceback
-import flet as ft
-
-from components.feedback import show_error
-from components.layout import asegurar_zona
-from context.app_state import AppState
-from pages import (
-    account_page,
-    avatar_page,
-    birthdate_page,
-    chat_page,
-    chat_settings_page,
-    chats_page,
-    comments_page,
-    login_page,
-    notifications_page,
     portfolio_editor_page,
     portfolio_page,
     portfolio_picker_page,
